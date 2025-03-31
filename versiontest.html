@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Visualisation 3D - Nappe Phréatique</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <style>
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 300px;
+            font-family: Arial, sans-serif;
+        }
+        .water-level {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 100, 200, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            z-index: 1000;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <a-scene>
+        <!-- Sol -->
+        <a-plane rotation="-90 0 0" width="20" height="20" color="#5d4037" roughness="0.8"></a-plane>
+
+        <!-- Nappe phréatique -->
+        <a-box id="water" width="10" depth="10" color="#1E88E5" opacity="0.8" 
+               position="0 0.25 0"></a-box>
+
+        <!-- Échelle de mesure -->
+        <a-cylinder radius="0.05" height="6" color="red" position="0 6 5" rotation="0 0 90"></a-cylinder>
+        <!-- <a-text value="0m" color="black" position="7.5 0.2 0" scale="1.5 1.5 1.5"></a-text>
+        <a-text value="3m" color="black" position="7.5 3 0" scale="1.5 1.5 1.5"></a-text>
+        <a-text value="6m" color="black" position="7.5 6 0" scale="1.5 1.5 1.5"></a-text> -->
+
+        <!-- Lumière -->
+        <a-light type="ambient" color="#FFFFFF"></a-light>
+        <a-light type="directional" color="#FFFFFF" position="0 10 5" intensity="0.6"></a-light>
+        <a-light type="point" intensity="0.9" position="0 10 5" castShadow="true"></a-light>
+
+        <!-- Caméra -->
+        <a-entity position="0 3 12">
+            <a-camera></a-camera>
+        </a-entity>
+    </a-scene>
+
+    <div class="info-panel" id="infoPanel"></div>
+    <div class="water-level" id="waterLevel"></div>
+
+    <script>
+        const waterData = JSON.parse(sessionStorage.getItem('waterData')) || {
+            values: [107.34, 107.34, 107.37, 107.39, 107.41, 107.45, 107.48],
+            maxValue: 107.48,
+            minValue: 107.34,
+            stationInfo: { codeBss: "03627X0052/P1", commune: "Gémigny", departement: "Loiret", altitude: "117.6", profondeur: 12 },
+            lastMeasurement: 107.48,
+            timestamp: "2025-03-25T13:44:31.334Z"
+        };
+
+        const infoPanel = document.getElementById('infoPanel');
+        infoPanel.innerHTML = `
+            <h3>${waterData.stationInfo.commune}</h3>
+            <p><strong>Département:</strong> ${waterData.stationInfo.departement}</p>
+            <p><strong>Code BSS:</strong> ${waterData.stationInfo.codeBss}</p>
+            <p><strong>Altitude:</strong> ${waterData.stationInfo.altitude} m</p>
+            <p><strong>Profondeur:</strong> ${waterData.stationInfo.profondeur} m</p>
+        `;
+
+        const waterElement = document.getElementById('water');
+        const waterLevelDisplay = document.getElementById('waterLevel');
+
+        const minHeight = 0;
+        const maxHeight = waterData.maxValue + waterData.stationInfo.profondeur;
+        const normalizedValue = (waterData.lastMeasurement - minHeight) / (maxHeight - minHeight || 1);
+        
+        const scaledHeight = normalizedValue * 6;
+
+        waterElement.setAttribute('height', scaledHeight);
+        waterElement.setAttribute('position', `0 ${scaledHeight / 2} 0`);
+
+        waterLevelDisplay.innerHTML = sessionStorage.getItem('waterData') 
+            ? `Niveau actuel: ${waterData.lastMeasurement.toFixed(2)} m (Min: ${waterData.minValue.toFixed(2)} m / Max: ${waterData.maxValue.toFixed(2)} m)`
+            : `Aucune mesure, template appliqué <br> Niveau actuel: ${waterData.lastMeasurement.toFixed(2)} m (Min: ${waterData.minValue.toFixed(2)} m / Max: ${waterData.maxValue.toFixed(2)} m)`;
+    </script>
+</body>
+</html>

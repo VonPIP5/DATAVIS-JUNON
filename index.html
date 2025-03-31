@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stage</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link href="style.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.1/nouislider.min.css">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-6" id="row1Col1">
+                <h1>Choisir un département : *</h1>
+                <select id="selectDepartement">
+                    <option value="choisirDepartement">Selectionner un département</option>
+                    <option value="18" id="Cher">Cher (18)</option>
+                    <option value="28" id="EureEtLoir">Eure-et-Loir (28)</option>
+                    <option value="36" id="Indre">Indre (36)</option>
+                    <option value="37" id="IndreEtLoire">Indre-et-Loire (37)</option>
+                    <option value="41" id="LoirEtCher">Loir-et-Cher (41)</option>
+                    <option value="45" id="Loiret">Loiret (45)</option>
+                </select>
+
+                <div id="infoSup">
+                    <h2 class="h2">Intervalle de temps rechercher</h2>
+                    <div id="referenceTemporel" class="row">
+                        <div id="solutionTemporel1" class="col-6">
+                            <select id="selectTemps">
+                                <option value="choisirTemps">Choisir une période de temps</option>
+                                <option value="1Semaine">1 semaine</option>
+                                <option value="1Mois">1 mois</option>
+                                <option value="3Mois">3 mois</option>
+                                <option value="6Mois">6 mois</option>
+                            </select>
+                        </div>
+
+                        <div id="solutionTemporel2" class="col-6">
+                            <p>Période Spécifique : (DD-MM-YYYY) (les '-' sont indispensables)</p>
+                            <div id="choisirTempsManuel">
+                                <input id="choisirTempsStart" placeholder="Début : (01-01-2000)">
+                                <input id="choisirTempsFinish" placeholder="Fin : (31-12-2000)">
+                                <button id="boutonPeriodeSpecifique">Validé les dates rentrées</button>
+                            </div>
+                        </div>
+                        <div id="solutionTemporel3" class="row">
+                            <p class="offset-1 col-10" id="paraSlider">
+                                Slider date : (Eviter de prendre un interval trop élevé)
+                                <br>
+                                Choisisez un département pour adapter les dates du slider.
+                            </p>
+                            <div id="slider" class="offset-1 col-10"></div>
+                            <div class="date-output col-6" id="startDate"></div> 
+                            <div class="date-output col-6" id="endDate"></div>
+                            <button id="boutonSlider" class="offset-4">Validé les dates du slider</button>
+                        </div>
+                    </div>
+
+                    <h2 class="h2">Code Bss : (facutatif)</h2>
+                    <div id="rentrerCodeBss" class="row">
+                        <div class="col-6">
+                            <label id="question" for="codeBssSelectioner"></label>
+                            <input type="text" id="codeBssSelectioner" placeholder="Ex : 05471X0070/P1">
+                        </div>
+                        <div class="col-6">
+                            <button id="boutonCodeBSS" class="result">Validé Code BSS</button>
+                        </div>
+                    </div>
+
+                </div>
+                
+                
+                <div id="erreur"></div>
+            </div>
+
+            <div class="col-6 ">
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <div id="forYou" class="forYouClass"></div>
+        <div id="afficher"></div>
+
+
+    </div>
+
+
+    <div class="message" id="message">
+        <div>La couleur change en fontion de l'emplacement de la dernière valeur :</div>
+        <div class="textRouge">Rouge : en dessous du 1er quartile</div>
+        <div class="textOrange">Orange : entre le 1er quartile et la médiane</div>
+        <div class="textJaune">Jaune : entre la médiane et le 3eme quartile</div>
+        <div class="textVert"> Vert : en dessus du 3 quartile</div>
+
+    </div>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.1/nouislider.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.0.2"></script>
+
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
+

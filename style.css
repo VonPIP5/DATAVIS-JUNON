@@ -1,0 +1,217 @@
+#referenceTemporel{
+    text-align: center;
+    align-items: center;
+}
+
+#rentrerCodeBss{
+    text-align: center;
+    align-items: center;
+}
+
+#map {
+    margin-top: 1%;
+    height: 600px;
+    border: solid #000000;
+}
+
+
+.legend {
+    background: rgba(255, 255, 255, 1);
+    padding: 5%;
+    line-height: 1.5;
+    font-size: 1em;
+  }
+
+.imgLegendeMap{
+    width: 15%;
+}
+
+/* ________________________   For   You   ________________________ */
+.forYouClass{
+    margin: 5% 0;
+}
+
+/*  __________     Style pour les bouton     _________________ */
+.accordion-item {
+    border-bottom: 1px solid #ddd;
+}
+
+.accordion-item:last-child {
+    border-bottom: none;
+}
+
+.accordion-button {
+    width: 100%;
+    padding: 15px;
+    text-align: left;
+    background: #f1f1f1;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.3s ease;
+    display: flex;
+    align-items: center
+}
+
+.accordion-button:hover {
+    background: #ddd;
+}
+
+.accordion-content {
+    padding: 0 15px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.resultat0{
+    text-align: center;
+}
+
+.miseEnAvant{
+    background-color: #69c343;
+}
+
+#paraSlider{
+    margin-top: 3%;
+}
+
+.lesInfosMQ1Q3{
+    margin: 2% 0px;
+    padding-left: 1%;
+    background-color: rgb(255, 255, 255);
+    display: flex;
+}
+
+.paraMQ{
+    margin-bottom: 0px;
+}
+
+/*  __________     Style pour le Slider     ______________ */
+
+.date-output {
+    margin-top: 2%;
+}
+
+#bouttonSlider{
+    margin-top: 2%; 
+}
+
+.h2{
+    margin-top: 4%;
+}
+
+/* ___________ Background dynamique _____________ */
+
+body {
+    background: linear-gradient(120deg, #0084b8, #90e0ef, #caf0f8);
+    background-size: 200% 200%;
+    animation: gradientAnimation 10s ease infinite;
+    color: black;
+}
+
+@keyframes gradientAnimation {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+
+.fondBlanc{
+    background-color: white;
+}
+
+
+.agenda{
+    margin-top: 4%;
+}
+
+#afficher{
+    margin-bottom: 2%;
+}
+
+.Row2Bouton{
+    margin-bottom: 1%;
+}
+
+/* ___________ note de couleur _____________ */
+
+.accordion-button .textDuBouton   {
+    flex: 1; 
+}
+
+.defDesCouleurs{
+    display: flex;
+}
+
+.couleurRouge{
+    height: 25px;
+    width: 25px;
+    background-color: red;
+    border-radius: 20px;
+}
+
+.couleurOrange{
+    height: 25px;
+    width: 25px;
+    background-color: orange;
+    border-radius: 20px;
+}
+
+.couleurJaune{
+    height: 25px;
+    width: 25px;
+    background-color: yellow;
+    border-radius: 20px;
+}
+
+.couleurVert{
+    height: 25px;
+    width: 25px;
+    background-color: green;
+    border-radius: 20px;
+}
+
+#lienGraph1{
+    margin-right: 2%;
+}
+
+#lien2Graph1{
+    margin-right: 2%;
+}
+
+
+/*____________________   Message du score _____________________ */
+
+.message {
+    display: none;
+    position: absolute;
+    background-color: lightgray;
+    border: 1px solid darkgray;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.textRouge{
+    color: red
+}
+
+.textOrange{
+    color: orange
+}
+
+.textJaune{
+    color: rgb(194, 175, 0)
+}
+
+.textVert{
+    color: green
+}
+
