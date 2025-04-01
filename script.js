@@ -1,3 +1,116 @@
+// ______________  Déclaration des variables ________________
+let url
+let titre = document.querySelector("#titre");
+let parametre = document.querySelector("#parametre");
+let question = document.querySelector("#question");
+let afficher = document.querySelector("#afficher");
+let infoSup = document.querySelector("#infoSup");
+let boutonCodeBSS = document.querySelector("#boutonCodeBSS");
+let forYou = document.querySelector("#forYou");
+let espaceGraphique = document.querySelector("#espaceGraphique");
+let row1Col1 = document.querySelector("#row1Col1");
+let boutonPeriodeSpecifique = document.querySelector("#boutonPeriodeSpecifique");
+
+let listeCPiezometriques = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques"
+let listeCPiezometriquesTR = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques_tr"
+let listeStations = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations"
+
+let temps = document.querySelector(".h2");
+let parametreTemps = document.querySelector("#referenceTemporel");
+let selectTemps = document.querySelector("#selectTemps");
+let solutionTemporel2 = document.querySelector("#solutionTemporel2")
+let choisirTempsManuel = document.querySelector("#choisirTempsManuel")
+let choisirTempsStart = document.querySelector("#choisirTempsStart")
+let choisirTempsFinish = document.querySelector("#choisirTempsFinish")
+let codeBssSelectioner = document.querySelector("#codeBssSelectioner")
+
+afficher.innerHTML = ""
+
+// https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations?code_departement=&41&date_debut_mesure=2025-03-10&date_fin_mesure=2025-03-20
+
+// ------------------------- Bouton pour la visualisation 3D en colonne/tube -------------------------
+
+function ajouterBoutonVue3D() {
+    let buttonVisu = document.getElementById('3dVisu');
+
+    // Supprimer le bouton existant s'il y en a un
+    const boutonExistant = document.getElementById("boutonVue3D");
+    if (boutonExistant) {
+        boutonExistant.remove();
+    }
+
+    const boutonVue3D = document.createElement("button");
+    boutonVue3D.id = "boutonVue3D";
+
+    let url = '';
+    let dateDebut = choisirTempsStart.value;
+    let dateFin = choisirTempsFinish.value;
+
+    if (!dateDebut || !dateFin) {
+        let today = new Date();
+        let tenDaysAgo = new Date();
+        tenDaysAgo.setDate(today.getDate() - 10);
+
+        dateDebut = tenDaysAgo.toISOString().split('T')[0];
+        dateFin = today.toISOString().split('T')[0];
+
+        boutonVue3D.textContent = "Vue 3D des 10 derniers jours";
+    } else {
+        boutonVue3D.textContent = "Vue 3D";
+    }
+
+
+    url = `${listeStations}?code_departement=${selectDepartement.value}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+
+    console.log("URL API utilisée :", url); // Debugging
+
+    buttonVisu.appendChild(boutonVue3D);
+
+    boutonVue3D.addEventListener("click", async () => {
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            console.log("Données API :", data); // Debugging
+
+            if (!data.data || data.data.length === 0) {
+                console.warn("Aucune donnée trouvée pour cette période.");
+                return;
+            }
+
+            const departementStationsInformations = data.data.map(station => {
+                return {
+                    codeBss: station.code_bss,
+                    commune: station.nom_commune,
+                    departement: station.nom_departement,
+                    altitude: station.altitude_station,
+                    dateDebut,
+                    dateFin
+                };
+            });
+
+            sessionStorage.setItem("stationsData", JSON.stringify(departementStationsInformations));
+            console.log(departementStationsInformations);
+            // window.location.href = "visu.html";
+
+        } catch (error) {
+            console.error("Erreur lors de la récupération des données des stations :", error);
+        }
+    });
+}
+
+selectDepartement.addEventListener("change", () => {
+    if (selectDepartement.value !== "choisirDepartement") {
+        ajouterBoutonVue3D();
+    }
+});
+
+boutonPeriodeSpecifique.addEventListener("click", () => {
+    if ((selectDepartement.value !== "choisirDepartement") && (choisirTempsStart.value && choisirTempsFinish.value)) {
+        ajouterBoutonVue3D();
+    }
+});
+
+
 // ________________________       MAPS        _______________________________
 window.open3DView = function(codeBss) {
     // Trouver le marker correspondant
@@ -115,35 +228,6 @@ legend.onAdd = function (map) {
 };
 
 legend.addTo(map);
-
-
-// ______________  Déclaration des variables ________________
-let url
-let titre = document.querySelector("#titre");
-let parametre = document.querySelector("#parametre");
-let question = document.querySelector("#question");
-let afficher = document.querySelector("#afficher");
-let infoSup = document.querySelector("#infoSup");
-let boutonCodeBSS = document.querySelector("#boutonCodeBSS");
-let forYou = document.querySelector("#forYou");
-let espaceGraphique = document.querySelector("#espaceGraphique");
-let row1Col1 = document.querySelector("#row1Col1");
-let boutonPeriodeSpecifique = document.querySelector("#boutonPeriodeSpecifique");
-
-let listeCPiezometriques = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques"
-let listeCPiezometriquesTR = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques_tr"
-let listeStations = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations"
-
-let temps = document.querySelector(".h2");
-let parametreTemps = document.querySelector("#referenceTemporel");
-let selectTemps = document.querySelector("#selectTemps");
-let solutionTemporel2 = document.querySelector("#solutionTemporel2")
-let choisirTempsManuel = document.querySelector("#choisirTempsManuel")
-let choisirTempsStart = document.querySelector("#choisirTempsStart")
-let choisirTempsFinish = document.querySelector("#choisirTempsFinish")
-let codeBssSelectioner = document.querySelector("#codeBssSelectioner")
-
-afficher.innerHTML = ""
 
 // ____________________  RECUPERER LES CODES BSS ____________________
 let URLDeps = []

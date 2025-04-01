@@ -170,3 +170,5 @@ AFRAME.registerComponent('polygon', {
 // faire un bouton qui permet la visualisation en 2.5D avec D3 js (sur une autre page surement)
 
 // material.opacity = 0.5; 
+
+// `https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=${codeBSS}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`
