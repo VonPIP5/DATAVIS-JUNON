@@ -39,8 +39,8 @@ window.open3DView = function(codeBss) {
     // sauvegarder dans localStorage
     const visualizationData = {
         values: waterLevels,
-        maxValue: waterLevels.length > 0 ? Math.max(...waterLevels) : 1,
-        minValue: waterLevels.length > 0 ? Math.min(...waterLevels) : 0,
+        maxValue: Math.max(...waterLevels),
+        minValue: Math.min(...waterLevels),
         stationInfo: {
             codeBss: stationData.code_bss,
             commune: stationData.nom_commune,
@@ -49,7 +49,6 @@ window.open3DView = function(codeBss) {
             profondeur: stationData.profondeur_investigation
         },
         lastMeasurement: lastValue,
-        timestamp: new Date().toISOString()
     };
 
     console.log("Données à sauvegarder:", visualizationData);
@@ -61,7 +60,7 @@ window.open3DView = function(codeBss) {
         console.log("sessionStorage après sauvegarde:", sessionStorage.getItem('waterData')); 
         
         // Ouvrir dans un nouvel onglet
-        const newWindow = window.open('versiontest.html', '_blank');
+        const newWindow = window.open('http://127.0.0.1:5500/versiontest.html', '_blank');
         
         // Vérifier que la fenêtre s'est ouverte
         if (!newWindow) {

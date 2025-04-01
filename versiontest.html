@@ -32,18 +32,61 @@
 </head>
 <body>
     <a-scene>
+        <!-- Mur arrière -->
+        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
+            shadow="cast:true; receive:true" position="0 2.355 -7.5" 
+            height="4.75" depth="0.5" width="15" static-body>
+            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
+                shadow="cast:true; receive:true" position="0 -1.74 0.05" 
+                height="1.25" depth="0.5" width="15" static-body></a-box>
+        </a-box>
+
+        <!-- Mur avant -->
+        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
+            shadow="cast:true; receive:true" position="0 2.355 7.5" 
+            height="4.75" depth="0.5" width="15" static-body>
+            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
+                shadow="cast:true; receive:true" position="0 -1.74 -0.05" 
+                height="1.25" depth="0.5" width="15" static-body></a-box>
+        </a-box>
+
+        <!-- Mur gauche -->
+        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
+            shadow="cast:true; receive:true" position="-7.5 2.355 0" 
+            height="4.75" depth="15" width="0.5" static-body>
+            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
+                shadow="cast:true; receive:true" position="0.05 -1.74 0" 
+                height="1.25" depth="15" width="0.5" static-body></a-box>
+        </a-box>
+
+        <!-- Mur droit -->
+        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
+            shadow="cast:true; receive:true" position="7.5 2.355 0" 
+            height="4.75" depth="15" width="0.5" static-body>
+            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
+                shadow="cast:true; receive:true" position="-0.05 -1.74 0" 
+                height="1.25" depth="15" width="0.5" static-body></a-box>
+        </a-box>
+
+        <!-- Plafond -->
+        <a-plane position="0 4.75 0" rotation="90 0 0" width="15" height="15" 
+            material="src: ./textures/plank.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 15 15;">
+        </a-plane>
+
         <!-- Sol -->
-        <a-plane rotation="-90 0 0" width="20" height="20" color="#5d4037" roughness="0.8"></a-plane>
+        <a-box shadow="receive:true" position="0 -1 0" width="15" height="2" depth="15"
+            material="src: ./textures/plank.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 15 15;"
+            static-body></a-box>
+
+        <!-- Ciel -->
+        <a-sky color="#ECECEC"></a-sky>
 
         <!-- Nappe phréatique -->
-        <a-box id="water" width="10" depth="10" color="#1E88E5" opacity="0.8" 
-               position="0 0.25 0"></a-box>
+        <a-box id="water" width="5" depth="0.5" color="#1E88E5" opacity="0.8" 
+               position="0 0.25 -6.75"></a-box>
 
         <!-- Échelle de mesure -->
-        <a-cylinder radius="0.05" height="6" color="red" position="0 6 5" rotation="0 0 90"></a-cylinder>
-        <!-- <a-text value="0m" color="black" position="7.5 0.2 0" scale="1.5 1.5 1.5"></a-text>
-        <a-text value="3m" color="black" position="7.5 3 0" scale="1.5 1.5 1.5"></a-text>
-        <a-text value="6m" color="black" position="7.5 6 0" scale="1.5 1.5 1.5"></a-text> -->
+        <a-cylinder radius="0.05" height="3" color="red" position="0 1.5dz -6.75" ></a-cylinder>
 
         <!-- Lumière -->
         <a-light type="ambient" color="#FFFFFF"></a-light>
@@ -51,9 +94,18 @@
         <a-light type="point" intensity="0.9" position="0 10 5" castShadow="true"></a-light>
 
         <!-- Caméra -->
-        <a-entity position="0 3 12">
-            <a-camera></a-camera>
-        </a-entity>
+        <!-- <a-entity>
+            <a-camera raycaster="objects: .interactive" far="15" id="camera" fov="100" 
+                     look-controls="pointerLockEnabled: true; mouseDrag: true" 
+                     wasd-controls="enabled: false" rotation="0 0 0">
+                <a-plane id="cursor"
+                        position="0 0 -1"
+                        width="0.12" 
+                        height="0.12" 
+                        material="src: ./textures/cursor.png; transparent: true; roughness: 100; metalness: 0;">
+                </a-plane>
+            </a-camera>
+        </a-entity> -->
     </a-scene>
 
     <div class="info-panel" id="infoPanel"></div>
@@ -66,7 +118,6 @@
             minValue: 107.34,
             stationInfo: { codeBss: "03627X0052/P1", commune: "Gémigny", departement: "Loiret", altitude: "117.6", profondeur: 12 },
             lastMeasurement: 107.48,
-            timestamp: "2025-03-25T13:44:31.334Z"
         };
 
         const infoPanel = document.getElementById('infoPanel');
@@ -85,10 +136,10 @@
         const maxHeight = waterData.maxValue + waterData.stationInfo.profondeur;
         const normalizedValue = (waterData.lastMeasurement - minHeight) / (maxHeight - minHeight || 1);
         
-        const scaledHeight = normalizedValue * 6;
+        const scaledHeight = normalizedValue * 3;
 
         waterElement.setAttribute('height', scaledHeight);
-        waterElement.setAttribute('position', `0 ${scaledHeight / 2} 0`);
+        waterElement.setAttribute('position', `0 ${scaledHeight / 2} -6.75`);
 
         waterLevelDisplay.innerHTML = sessionStorage.getItem('waterData') 
             ? `Niveau actuel: ${waterData.lastMeasurement.toFixed(2)} m (Min: ${waterData.minValue.toFixed(2)} m / Max: ${waterData.maxValue.toFixed(2)} m)`
