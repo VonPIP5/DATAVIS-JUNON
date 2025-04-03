@@ -1,4 +1,20 @@
+/**
+ * Style des pannels d'information
+ */
+
 .info-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    border-radius: 8px;
+    z-index: 1000;
+    max-width: 400px;
+    font-family: Arial, sans-serif;
+}
+
+.base-infos-panel {
     position: fixed;
     top: 20px;
     left: 20px;
