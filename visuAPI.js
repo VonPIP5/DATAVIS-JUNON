@@ -10,12 +10,20 @@
  */
 const stationsData = JSON.parse(sessionStorage.getItem('stationsData'));
 
-let dateDebut = stationsData.dateDebut
-let dateFin = stationsData.dateFin
+let dateDebut = invertDate(stationsData.dateDebut);
+let dateFin = invertDate(stationsData.dateFin);
+
+console.log('dateDebut:', dateDebut);
+console.log('dateFin:', dateFin);
 
 const departementStationsInformations = {
     stations: []
 };
+
+function invertDate(date) {
+    const [day, month, year] = date.split('-');
+    return `${year}-${month}-${day}`;
+}
 
 /**
  * Récupération des données de niveaux de nappe de l'API 
@@ -24,8 +32,6 @@ const departementStationsInformations = {
 if (!stationsData || !stationsData.stations) {
     console.error("Les données des stations sont invalides ou absentes.");
 } else {
-    console.log("Données des stations chargées :", stationsData);
-
     async function fetchStationsData() {
         for (const station of stationsData.stations) {
             const url = `https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=${station.codeBss}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
@@ -33,8 +39,6 @@ if (!stationsData || !stationsData.stations) {
             try {
                 const response = await fetch(url);
                 const data = await response.json();
-
-                // console.log(data.data);
 
                 departementStationsInformations.stations.push({
                     commune: station.commune || null,
@@ -50,7 +54,6 @@ if (!stationsData || !stationsData.stations) {
             }
         }
 
-        console.log("Informations des stations récupérées :", departementStationsInformations);
         document.dispatchEvent(new CustomEvent('stationsDataLoaded'));
 
     }
@@ -70,16 +73,16 @@ baseInfosPannel.innerHTML = `
     <h3><strong>Intervalle de temps:</strong> ${stationsData.dateDebut} - ${stationsData.dateFin} </h3>
   `;
 
-infoPanel.innerHTML = `
-    <h2> station </h2>
-    <p><strong>Code BSS:</strong>  </p>
-    <p><strong>Altitude:</strong>  </p>
-    <p><strong>Profondeur:</strong> </p>
-    <hr/>
-    <h3>Mesures</h3>
-    <p><strong>Mesure minimum:</strong> </p>
-    <p><strong>Mesure maximum:</strong> </p>
-  `;
+// infoPanel.innerHTML = `
+//     <h2> station </h2>
+//     <p><strong>Code BSS:</strong>  </p>
+//     <p><strong>Altitude:</strong>  </p>
+//     <p><strong>Profondeur:</strong> </p>
+//     <hr/>
+//     <h3>Mesures</h3>
+//     <p><strong>Mesure minimum:</strong> </p>
+//     <p><strong>Mesure maximum:</strong> </p>
+//   `;
 
 /**
  * Trouver la série avec le plus grand nombre de données afin de set la hauteur du polygone
@@ -121,7 +124,6 @@ AFRAME.registerComponent('polygon', {
     init: function () {
         document.addEventListener('stationsDataLoaded', () => {
             const sides = departementStationsInformations.stations.length;
-            console.log(sides);
             this.updateGeometry(sides);
         });
     },
@@ -132,32 +134,27 @@ AFRAME.registerComponent('polygon', {
             departementStationsInformations.stations.map(station => station.mesuresNappes.map(mesure => mesure.niveauNappe))
         );
 
-        console.log(`max data count: ${maxDataCount}`);
-        console.log(`series min max: ${seriesMinMax}`);
-
         const shape = new THREE.Shape();
         const angleStep = (Math.PI * 2) / sides;
         const radius = 2;
 
-        // Vérifier que le nombre de côtés est valide
         if (sides < 3) {
             console.error("Le nombre de côtés doit être au moins 3.");
             return;
         }
 
-        // Tracer le polygone
+        // Tracage le polygone
         for (let i = 0; i < sides; i++) {
             const x = Math.cos(i * angleStep) * radius;
             const y = Math.sin(i * angleStep) * radius;
             if (i === 0) {
-                shape.moveTo(x, y); // Début du chemin
+                shape.moveTo(x, y);
             } else {
-                shape.lineTo(x, y); // Ajouter un segment
+                shape.lineTo(x, y);
             }
         }
 
-        // Fermer le chemin du polygone
-        shape.lineTo(Math.cos(0) * radius, Math.sin(0) * radius); // Retour au point de départ
+        shape.lineTo(Math.cos(0) * radius, Math.sin(0) * radius);
 
         const extrudeSettings = {
             depth: -maxDataCount / 4,
@@ -166,7 +163,8 @@ AFRAME.registerComponent('polygon', {
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         const material = new THREE.MeshStandardMaterial({
-            color: 'red',
+            color: '#3b635c',
+
             side: THREE.DoubleSide
         });
         const mesh = new THREE.Mesh(geometry, material);
@@ -189,6 +187,7 @@ AFRAME.registerComponent('polygon', {
             if (!serie) continue;
 
             const dataValues = Object.values(serie);
+
             const dataCount = dataValues.length;
             const { min, max } = seriesMinMax[i];
 
@@ -204,10 +203,12 @@ AFRAME.registerComponent('polygon', {
             const dirZ = endZ - startZ;
 
             for (let j = 0; j < dataCount; j++) {
-                const value = dataValues[j];
+                const value = dataValues[j].niveauNappe;
 
                 //déterminer l'opacité du rectangle de mesure si l'une des mesures en une chaine vide ou NULL
                 const opacity = !value ? 0 : 1;
+
+                // console.log(`value: ${value}, min: ${min}, max: ${max}`);
 
                 const grayValue = getGrayColor(value, min, max);
                 const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
