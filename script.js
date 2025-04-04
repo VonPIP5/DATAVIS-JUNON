@@ -56,6 +56,8 @@ function ajouterBoutonVue3D() {
 
         boutonVue3D.textContent = `Vue 3D des ${joursMesures} derniers jours`;
     } else {
+        dateDebut = invertDate(dateDebut);
+        dateFin = invertDate(dateFin);
         boutonVue3D.textContent = "Vue 3D sur la période de temps";
     }
 
@@ -345,11 +347,16 @@ function calculeTemps() {
 }
 
 
-// _______________ Fonction qui inverse le format de la date :   DD-MM-YYYY  -->   YYYY-MM-DD _______________
+// _______________ Fonction qui inverse le format de la date :   DD-MM-YYYY ou YYYY-MM-DD _______________
 
 function inverseFormatDate(date) {
     let [year, month, day] = date.split("-")
     return `${day}-${month}-${year}`;
+}
+
+function invertDate(date) {
+    const [day, month, year] = date.split('-');
+    return `${year}-${month}-${day}`;
 }
 
 // ________________ Fonction qui affiche une map à l'empassement demander ________________ 

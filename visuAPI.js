@@ -10,19 +10,20 @@
  */
 const stationsData = JSON.parse(sessionStorage.getItem('stationsData'));
 
-let dateDebut = invertDate(stationsData.dateDebut);
-let dateFin = invertDate(stationsData.dateFin);
-
-console.log('dateDebut:', dateDebut);
-console.log('dateFin:', dateFin);
+let dateDebut = stationsData.dateDebut;
+let dateFin = stationsData.dateFin;
 
 const departementStationsInformations = {
     stations: []
 };
 
+/**
+ * Inverser la date s'il le faut 
+ */
+
 function invertDate(date) {
-    const [day, month, year] = date.split('-');
-    return `${year}-${month}-${day}`;
+    const [year, month, day] = date.split('-');
+    return `${day}-${month}-${year}`;
 }
 
 /**
@@ -42,8 +43,10 @@ if (!stationsData || !stationsData.stations) {
 
                 departementStationsInformations.stations.push({
                     commune: station.commune || null,
+                    codeBSS: station.codeBss || null,
+                    altitude: station.altitude || null,
                     mesuresNappes: data.data.map(mesure => ({
-                        date: mesure.date_mesure || null,
+                        date: invertDate(mesure.date_mesure) || null,
                         niveauNappe: mesure.niveau_nappe_eau || null,
                         profondeurNappe: mesure.profondeur_nappe || null
                     }))
@@ -55,7 +58,6 @@ if (!stationsData || !stationsData.stations) {
         }
 
         document.dispatchEvent(new CustomEvent('stationsDataLoaded'));
-
     }
 
     fetchStationsData();
@@ -70,19 +72,8 @@ const infoPanel = document.getElementById('infoPanel');
 
 baseInfosPannel.innerHTML = `
     <h2> ${stationsData.departement} </h2>
-    <h3><strong>Intervalle de temps:</strong> ${stationsData.dateDebut} - ${stationsData.dateFin} </h3>
+    <h3><strong>Intervalle de temps:</strong> ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)} </h3>
   `;
-
-// infoPanel.innerHTML = `
-//     <h2> station </h2>
-//     <p><strong>Code BSS:</strong>  </p>
-//     <p><strong>Altitude:</strong>  </p>
-//     <p><strong>Profondeur:</strong> </p>
-//     <hr/>
-//     <h3>Mesures</h3>
-//     <p><strong>Mesure minimum:</strong> </p>
-//     <p><strong>Mesure maximum:</strong> </p>
-//   `;
 
 /**
  * Trouver la série avec le plus grand nombre de données afin de set la hauteur du polygone
@@ -182,6 +173,51 @@ AFRAME.registerComponent('polygon', {
         const angleStep = (Math.PI * 2) / sides;
         const sideLength = 2 * radius * Math.sin(Math.PI / sides);
 
+
+        /**
+        * Affichage des informations de la station associée au rectangle où l'on souhaite cliquer
+        */
+        AFRAME.registerComponent('click-listener', {
+            init: function () {
+                this.el.addEventListener('click', (event) => {
+                    const data = this.el.userData;
+
+                    infoPanel.style.display = 'block';
+
+                    if (!data) {
+                        infoPanel.innerHTML = `<h1>Aucune donnée récupérée.</h1>`
+                        return;
+                    }
+
+                    console.log(`Mesure sélectionnée :
+                - Commune : ${data.commune}
+                - Code BSS : ${data.codeBSS}
+                - Altitude : ${data.altitude}
+                - Profondeur Nappe : ${data.profondeurNappe}
+                - Date : ${data.date_mesure}
+                - Niveau de la nappe : ${data.niveauNappe}
+                - Niveau minimum : ${data.niveauMin}
+                - Niveau maximum : ${data.niveauMax}`);
+
+                    infoPanel.innerHTML = `
+                <h1> TEST </h1>
+                <h2> ${data.commune} </h2>
+                <p><strong>Code BSS:</strong> ${data.codeBSS} </p>
+                <p><strong>Altitude:</strong> ${data.altitude} </p>
+                <p><strong>Profondeur:</strong> ${data.profondeurNappe} </p>
+                <hr/>
+                <h3>Mesures</h3>
+                <p><strong>Date de la mesure:</strong> ${data.date_mesure} </p>
+                <p><strong>Mesure:</strong> ${data.niveauNappe} </p>
+                <p><strong>Mesure minimum:</strong> ${data.niveauMin} </p>
+                <p><strong>Mesure maximum:</strong> ${data.niveauMax} </p>
+              `;
+
+                });
+            }
+        });
+
+
         for (let i = 0; i < sides; i++) {
             const serie = departementStationsInformations.stations[i]?.mesuresNappes;
             if (!serie) continue;
@@ -207,8 +243,6 @@ AFRAME.registerComponent('polygon', {
 
                 //déterminer l'opacité du rectangle de mesure si l'une des mesures en une chaine vide ou NULL
                 const opacity = !value ? 0 : 1;
-
-                // console.log(`value: ${value}, min: ${min}, max: ${max}`);
 
                 const grayValue = getGrayColor(value, min, max);
                 const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
@@ -240,6 +274,26 @@ AFRAME.registerComponent('polygon', {
                 //Trouver l'angle du côté du polygone pour y attcher nos rectangles de mesures
                 const sideAngle = Math.atan2(dirZ, dirX);
                 rectangle.rotation.y = -sideAngle;
+
+
+                //Ajouter les informations de la station et des mesures dans les données du rectangle
+                rectangle.userData = {
+                    commune: departementStationsInformations.stations[i]?.commune || "N/A",
+                    codeBSS: departementStationsInformations.stations[i]?.codeBSS || "N/A",
+                    altitude: departementStationsInformations.stations[i]?.altitude || "N/A",
+                    profondeurNappe: dataValues[j]?.profondeurNappe || "N/A",
+                    date_mesure: dataValues[j]?.date || "N/A",
+                    niveauNappe: dataValues[j]?.niveauNappe || "N/A",
+                    niveauMin: min || "N/A",
+                    niveauMax: max || "N/A"
+                };
+
+                console.log(`Mesure ajoutée : ${rectangle.userData}`);
+
+                rectangle.el = document.createElement('a-entity');
+                rectangle.el.setObject3D('mesh', rectangle);
+                rectangle.el.setAttribute('click-listener', '');
+                this.el.appendChild(rectangle.el);
 
                 this.el.object3D.add(rectangle);
             }
