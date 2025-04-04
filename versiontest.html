@@ -3,6 +3,7 @@
 <head>
     <title>Visualisation 3D - Nappe Phréatique</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .info-panel {
             position: fixed;
@@ -14,7 +15,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             z-index: 1000;
             max-width: 300px;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .water-level {
             position: fixed;
@@ -27,77 +28,152 @@
             border-radius: 25px;
             z-index: 1000;
             font-size: 18px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .chart-panel {
+            bottom: 100px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            width: 400px;
+            height: 300px;
         }
     </style>
 </head>
 <body>
     <a-scene>
-        <!-- Mur arrière -->
-        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
-            shadow="cast:true; receive:true" position="0 2.355 -7.5" 
-            height="4.75" depth="0.5" width="15" static-body>
-            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
-                shadow="cast:true; receive:true" position="0 -1.74 0.05" 
-                height="1.25" depth="0.5" width="15" static-body></a-box>
-        </a-box>
-
-        <!-- Mur avant -->
-        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
-            shadow="cast:true; receive:true" position="0 2.355 7.5" 
-            height="4.75" depth="0.5" width="15" static-body>
-            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
-                shadow="cast:true; receive:true" position="0 -1.74 -0.05" 
-                height="1.25" depth="0.5" width="15" static-body></a-box>
-        </a-box>
-
-        <!-- Mur gauche -->
-        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
-            shadow="cast:true; receive:true" position="-7.5 2.355 0" 
-            height="4.75" depth="15" width="0.5" static-body>
-            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
-                shadow="cast:true; receive:true" position="0.05 -1.74 0" 
-                height="1.25" depth="15" width="0.5" static-body></a-box>
-        </a-box>
-
-        <!-- Mur droit -->
-        <a-box material="src: ./textures/tapisserie.avif; roughness: 1; metalness: 0; repeat: 15 5;" 
-            shadow="cast:true; receive:true" position="7.5 2.355 0" 
-            height="4.75" depth="15" width="0.5" static-body>
-            <a-box material="src: ./textures/boiserie.jpg; repeat: 15 1;" 
-                shadow="cast:true; receive:true" position="-0.05 -1.74 0" 
-                height="1.25" depth="15" width="0.5" static-body></a-box>
-        </a-box>
-
+        <!-- Mur -->
+        <a-entity id="mur">
+            <!-- Mur 1 (Face avant) -->
+            <a-plane position="0 2.355 -5.2" rotation="0 0 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 2 (Avant-droite) -->
+            <a-plane position="4.5 2.355 -2.6" rotation="0 -60 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 3 (Arrière-droite) -->
+            <a-plane position="4.5 2.355 2.6" rotation="0 -120 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 4 (Face arrière) -->
+            <a-plane position="0 2.355 5.2" rotation="0 180 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 5 (Arrière-gauche) -->
+            <a-plane position="-4.5 2.355 2.6" rotation="0 120 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 6 (Avant-gauche) -->
+            <a-plane position="-4.5 2.355 -2.6" rotation="0 60 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+        </a-entity>
+        
         <!-- Plafond -->
-        <a-plane position="0 4.75 0" rotation="90 0 0" width="15" height="15" 
-            material="src: ./textures/plank.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 15 15;">
-        </a-plane>
+        <a-entity id="plafond">
+            <a-circle position="0 4.75 0" rotation="90 0 0" radius="7" 
+                material="src: ./textures/metal_black1k.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 3 3; emissive: #000000; emissiveIntensity: 3;">
+            </a-circle>
+            <a-entity id="lumNappesToit" light="type: spot; color: #FFFFFF; intensity: 0.9; castShadow: true; angle: 30; penumbra: 0.7" position="0 4.7 -5.1" rotation="-90 0 0"></a-entity>
+            <a-entity id="lumNappesSol" light="type: spot; color: #FFFFFF; intensity: 0.9; castShadow: true; angle: 30; penumbra: 0.7" position="0 -0.125 -4.888" rotation="90 0 0"></a-entity>
+        </a-entity>
 
         <!-- Sol -->
-        <a-box shadow="receive:true" position="0 -1 0" width="15" height="2" depth="15"
-            material="src: ./textures/plank.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 15 15;"
-            static-body></a-box>
+        <a-circle id="sol" position="0 0 0" radius="7" rotation="-90 0 0"
+            material="src: ./textures/test-sol.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 8 8;" static-body segments-radial="6">
+        </a-circle>
 
-        <!-- Ciel -->
-        <a-sky color="#ECECEC"></a-sky>
+        <!-- Plinthes bas -->
+        <a-entity id="plinthes-Bas">
+            <!-- Face avant -->
+            <a-box position="0 0 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-droite -->
+            <a-box position="4.5 0 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arrière-droite -->
+            <a-box position="4.5 0 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Face arrière -->
+            <a-box position="0 0 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arrière-gauche -->
+            <a-box position="-4.5 0 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-gauche -->
+            <a-box position="-4.5 0 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        </a-entity>    
+        
+        <!-- Plinthes haut -->
+        <a-entity id="plinthes-Haut">
+            <!-- Face avant -->
+            <a-box position="0 4.75 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-droite -->
+            <a-box position="4.5 4.75 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arrière-droite -->
+            <a-box position="4.5 4.75 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Face arrière -->
+            <a-box position="0 4.75 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arrière-gauche -->
+            <a-box position="-4.5 4.75 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-gauche -->
+            <a-box position="-4.5 4.75 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        </a-entity>  
 
         <!-- Nappe phréatique -->
-        <a-box id="water" width="5" depth="0.5" color="#1E88E5" opacity="0.8" 
-               position="0 0.25 -6.75"></a-box>
+        <a-box id="water" width="5" depth="0.5" material="color: #1E88E5; emissive: #1E88E5; emissiveIntensity: 0.3" 
+               position="0 0.25 -5.25"></a-box>
 
         <!-- Échelle de mesure -->
-        <a-cylinder radius="0.05" height="3" color="red" position="0 1.5dz -6.75" ></a-cylinder>
+        <a-cylinder id="echelle-Mesure" radius="0.05" height="3" color="red" position="0 1.5 -5"></a-cylinder>
+        
+        <!-- Encadrés et textes d'échelle -->
+        <a-entity id="texte-value-Max">
+            <a-plane position="-0 3.25 -4.5" rotation="0 0 0" width="1" height="0.4"
+                    material="color: #333; opacity: 0.7; side: double"></a-plane>
+            <a-text id="maxValueText" value="1m" 
+                    color="white" position="-0.37 3.25 -4.45" scale="0.8 0.8 0.8"
+                    font="https://cdn.aframe.io/fonts/Roboto-msdf.json" shadow="cast:true; receive:true"></a-text>
+        </a-entity>
+        
+        <a-entity id="texte-Value-Actuel">
+        <a-plane position="-0 2.3 -4.5" rotation="0 0 0" width="1" height="0.4"
+                material="color: #333; opacity: 0.7; side: double"></a-plane>
+        <a-text id="waterValueText" value="98m" 
+                color="white" position="-0.37 2.3 -4.45" scale="0.8 0.8 0.8"
+                font="https://cdn.aframe.io/fonts/Roboto-msdf.json" shadow="cast:true; receive:true"></a-text>
+        </a-entity>
 
-        <!-- Lumière -->
-        <a-light type="ambient" color="#FFFFFF"></a-light>
-        <a-light type="directional" color="#FFFFFF" position="0 10 5" intensity="0.6"></a-light>
-        <a-light type="point" intensity="0.9" position="0 10 5" castShadow="true"></a-light>
+        <!-- Panneau de graphique -->
+        <a-entity id="chartPanel" position="4.45 2.4 -2.6" rotation="0 -60 0">
+            <a-plane id="chartPlane" width="4" height="3" material="color: white">
+                <a-text value="Graphique" color="black" position="0 0.6 0.01" width="2"></a-text>
+            </a-plane>
+        </a-entity>
 
         <!-- Caméra -->
-        <!-- <a-entity>
-            <a-camera raycaster="objects: .interactive" far="15" id="camera" fov="100" 
-                     look-controls="pointerLockEnabled: true; mouseDrag: true" 
-                     wasd-controls="enabled: false" rotation="0 0 0">
+        <a-entity position="0 0 0">
+            <a-camera raycaster="objects: .interactive" far="12" id="camera" fov="100" 
+                look-controls="pointerLockEnabled: true; mouseDrag: true"wasd-controls="enabled: true" rotation="0 0 0">
                 <a-plane id="cursor"
                         position="0 0 -1"
                         width="0.12" 
@@ -105,13 +181,24 @@
                         material="src: ./textures/cursor.png; transparent: true; roughness: 100; metalness: 0;">
                 </a-plane>
             </a-camera>
-        </a-entity> -->
+        </a-entity>
+
+        <!-- Lumière ambiante-->
+        <a-light type="ambient" color="#8899FF" intensity="0.2"></a-light>
+
+        <!-- Ciel -->
+        <a-sky color="#ECECEC"></a-sky>
+
     </a-scene>
 
     <div class="info-panel" id="infoPanel"></div>
     <div class="water-level" id="waterLevel"></div>
+    <div class="chart-panel">
+        <canvas id="waterChart"></canvas>
+    </div>
 
     <script>
+        // Récupération des données depuis le sessionStorage
         const waterData = JSON.parse(sessionStorage.getItem('waterData')) || {
             values: [107.34, 107.34, 107.37, 107.39, 107.41, 107.45, 107.48],
             maxValue: 107.48,
@@ -120,7 +207,8 @@
             lastMeasurement: 107.48,
         };
 
-        const infoPanel = document.getElementById('infoPanel');
+        // Affichage des informations de la station
+        const infoPanel = document.querySelector('#infoPanel');
         infoPanel.innerHTML = `
             <h3>${waterData.stationInfo.commune}</h3>
             <p><strong>Département:</strong> ${waterData.stationInfo.departement}</p>
@@ -129,8 +217,11 @@
             <p><strong>Profondeur:</strong> ${waterData.stationInfo.profondeur} m</p>
         `;
 
-        const waterElement = document.getElementById('water');
-        const waterLevelDisplay = document.getElementById('waterLevel');
+        // Configuration de la nappe d'eau
+        const waterElement = document.querySelector('#water');
+        const waterLevelDisplay = document.querySelector('#waterLevel');
+        const waterValueText = document.querySelector('#waterValueText');
+        const maxValueText = document.querySelector('#maxValueText');
 
         const minHeight = 0;
         const maxHeight = waterData.maxValue + waterData.stationInfo.profondeur;
@@ -139,11 +230,102 @@
         const scaledHeight = normalizedValue * 3;
 
         waterElement.setAttribute('height', scaledHeight);
-        waterElement.setAttribute('position', `0 ${scaledHeight / 2} -6.75`);
+        waterElement.setAttribute('position', `0 ${scaledHeight / 2} -5.25`);
+        
+        // Mise à jour des textes
+        maxValueText.setAttribute('value', `${maxHeight.toFixed(2)}m`);
+        waterValueText.setAttribute('value', `${waterData.lastMeasurement.toFixed(2)}m`);
 
         waterLevelDisplay.innerHTML = sessionStorage.getItem('waterData') 
             ? `Niveau actuel: ${waterData.lastMeasurement.toFixed(2)} m (Min: ${waterData.minValue.toFixed(2)} m / Max: ${waterData.maxValue.toFixed(2)} m)`
             : `Aucune mesure, template appliqué <br> Niveau actuel: ${waterData.lastMeasurement.toFixed(2)} m (Min: ${waterData.minValue.toFixed(2)} m / Max: ${waterData.maxValue.toFixed(2)} m)`;
+
+        // Création du graphique
+        document.addEventListener("DOMContentLoaded", function () {
+            const ctx = document.getElementById('waterChart').getContext('2d');
+            
+            // Créer des dates fictives pour l'axe X si non disponibles
+            const labels = waterData.values.map((_, index) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (waterData.values.length - index - 1));
+                return date.toLocaleDateString();
+            });
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Niveau de la nappe (m)',
+                        data: waterData.values,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Évolution du niveau d'eau - ${waterData.stationInfo.commune}`
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Niveau: ${context.parsed.y.toFixed(2)} m`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Niveau (m)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Convertir le graphique en image pour A-Frame
+            setTimeout(() => {
+                const chartImgDataUrl = document.getElementById('waterChart').toDataURL();
+                document.getElementById('chartPlane').setAttribute('material', 'src', chartImgDataUrl);
+            }, 1000);
+        });
+
+        // Animation de la nappe d'eau
+        let currentLevel = 0;
+        const targetLevel = scaledHeight;
+        const animationDuration = 2000; // 2 secondes
+        const startTime = Date.now();
+
+        function animateWater() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / animationDuration, 1);
+            
+            currentLevel = progress * targetLevel;
+            waterElement.setAttribute('height', currentLevel);
+            waterElement.setAttribute('position', `0 ${currentLevel / 2} -5.25`);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animateWater);
+            }
+        }
+
+        animateWater();
     </script>
 </body>
 </html>
