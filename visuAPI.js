@@ -278,14 +278,14 @@ AFRAME.registerComponent('polygon', {
 
                 //Ajouter les informations de la station et des mesures dans les données du rectangle
                 rectangle.userData = {
-                    commune: departementStationsInformations.stations[i]?.commune || "N/A",
-                    codeBSS: departementStationsInformations.stations[i]?.codeBSS || "N/A",
-                    altitude: departementStationsInformations.stations[i]?.altitude || "N/A",
-                    profondeurNappe: dataValues[j]?.profondeurNappe || "N/A",
-                    date_mesure: dataValues[j]?.date || "N/A",
-                    niveauNappe: dataValues[j]?.niveauNappe || "N/A",
-                    niveauMin: min || "N/A",
-                    niveauMax: max || "N/A"
+                    commune: departementStationsInformations.stations[i]?.commune || null,
+                    codeBSS: departementStationsInformations.stations[i]?.codeBSS || null,
+                    altitude: departementStationsInformations.stations[i]?.altitude || null,
+                    profondeurNappe: dataValues[j]?.profondeurNappe || null,
+                    date_mesure: dataValues[j]?.date || null,
+                    niveauNappe: dataValues[j]?.niveauNappe || null,
+                    niveauMin: min || null,
+                    niveauMax: max || null
                 };
 
                 console.log(`Mesure ajoutée : ${rectangle.userData}`);
