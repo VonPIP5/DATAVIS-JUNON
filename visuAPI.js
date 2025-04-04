@@ -41,6 +41,13 @@ if (!stationsData || !stationsData.stations) {
                 const response = await fetch(url);
                 const data = await response.json();
 
+                console.log(data.data);
+
+                if (!data.data || data.data.length === 0) {
+                    console.warn(`Aucune donnée trouvée pour la station ${station.codeBss}`);
+                    continue;
+                }
+                
                 departementStationsInformations.stations.push({
                     commune: station.commune || null,
                     codeBSS: station.codeBss || null,
@@ -71,21 +78,19 @@ const baseInfosPannel = document.getElementById('baseInfosPanel')
 const infoPanel = document.getElementById('infoPanel');
 
 baseInfosPannel.innerHTML = `
-    <h2> ${stationsData.departement} </h2>
+    <h1> ${stationsData.departement} </h1>
     <h3><span class='bold'>Intervalle de temps:</span> ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)} </h3>
   `;
 
 /**
- * Trouver la série avec le plus grand nombre de données afin de set la hauteur du polygone
+ * Fonctions utiles pour la création du tube de données
+ * getMaxdataCount : récupérer le nombre maximum de données pour chaque station
+ * getMinMaxValues : récupérer les valeurs min et max de chaque série de données
  */
 
 function getMaxDataCount(stations) {
     return Math.max(...stations.map(station => station.mesuresNappes.length));
 }
-
-/**
- * Trouver les valeurs minimales et maximales pour chaque série
- */
 
 function getMinMaxValues(data) {
     return data.map(serie => {
@@ -173,31 +178,25 @@ AFRAME.registerComponent('polygon', {
         const angleStep = (Math.PI * 2) / sides;
         const sideLength = 2 * radius * Math.sin(Math.PI / sides);
 
-
         /**
+        * TODO
         * Affichage des informations de la station associée au rectangle où l'on souhaite cliquer
         */
         AFRAME.registerComponent('click-listener', {
             init: function () {
                 this.el.addEventListener('click', () => {
-                    
+                    const data = this.userData;
 
                     infoPanel.style.display = 'block';
+                    console.log(`Mesure sélectionnée : ${data}`);
 
                     if (!data) {
                         infoPanel.innerHTML = `<h1>Aucune donnée récupérée.</h1>`
+                        console.error("Aucune donnée récupérée.");
                         return;
                     }
 
-                    console.log(`Mesure sélectionnée :
-                - Commune : ${data.commune}
-                - Code BSS : ${data.codeBSS}
-                - Altitude : ${data.altitude}
-                - Profondeur Nappe : ${data.profondeurNappe}
-                - Date : ${data.date_mesure}
-                - Niveau de la nappe : ${data.niveauNappe}
-                - Niveau minimum : ${data.niveauMin}
-                - Niveau maximum : ${data.niveauMax}`);
+                    console.log(`Mesure sélectionnée : ${data}`);
 
                     infoPanel.innerHTML = `
                 <h1> TEST </h1>
@@ -280,8 +279,7 @@ AFRAME.registerComponent('polygon', {
                 rectangle.el.setObject3D('mesh', rectangle);
                 rectangle.el.setAttribute('click-listener', '');
 
-                //Ajouter les informations de la station et des mesures dans les données du rectangle
-                rectangle.userData = {
+                const tabtest = {
                     infosStation: {
                         commune: stationInformations?.commune || null,
                         codeBSS: stationInformations?.codeBSS || null,
@@ -293,6 +291,12 @@ AFRAME.registerComponent('polygon', {
                         niveauMax: max || null
                     }
                 };
+
+                //TODO
+
+                rectangle.userData = tabtest;
+
+                // console.log('userData :', rectangle.userData);
 
                 this.el.appendChild(rectangle.el);
                 this.el.object3D.add(rectangle);
