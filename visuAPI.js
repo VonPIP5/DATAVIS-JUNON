@@ -43,21 +43,18 @@ if (!stationsData || !stationsData.stations) {
 
                 console.log(data.data);
 
-                if (!data.data || data.data.length === 0) {
-                    console.warn(`Aucune donnée trouvée pour la station ${station.codeBss}`);
-                    continue;
+                if (data.data.length > 0) {
+                    departementStationsInformations.stations.push({
+                        commune: station.commune || null,
+                        codeBSS: station.codeBss || null,
+                        altitude: station.altitude || null,
+                        mesuresNappes: data.data.map(mesure => ({
+                            date: invertDate(mesure.date_mesure) || null,
+                            niveauNappe: mesure.niveau_nappe_eau || null,
+                            profondeurNappe: mesure.profondeur_nappe || null
+                        }))
+                    });
                 }
-                
-                departementStationsInformations.stations.push({
-                    commune: station.commune || null,
-                    codeBSS: station.codeBss || null,
-                    altitude: station.altitude || null,
-                    mesuresNappes: data.data.map(mesure => ({
-                        date: invertDate(mesure.date_mesure) || null,
-                        niveauNappe: mesure.niveau_nappe_eau || null,
-                        profondeurNappe: mesure.profondeur_nappe || null
-                    }))
-                });
 
             } catch (error) {
                 console.error(`Erreur lors de la récupération des données pour la station ${station.codeBss}:`, error);
