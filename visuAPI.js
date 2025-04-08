@@ -41,8 +41,6 @@ if (!stationsData || !stationsData.stations) {
                 const response = await fetch(url);
                 const data = await response.json();
 
-                console.log(data.data);
-
                 if (data.data.length > 0) {
                     departementStationsInformations.stations.push({
                         commune: station.commune || null,
@@ -113,7 +111,7 @@ AFRAME.registerComponent('polygon', {
         depth: { type: 'number', default: 1, min: 1 }
     },
 
-    //Set le nombre de côtés en fonction du nombre de séries de données
+    // Set le nombre de côtés en fonction du nombre de séries de données
     init: function () {
         document.addEventListener('stationsDataLoaded', () => {
             const sides = departementStationsInformations.stations.length;
@@ -136,7 +134,7 @@ AFRAME.registerComponent('polygon', {
             return;
         }
 
-        // Tracage le polygone
+        // Tracage du polygone
         for (let i = 0; i < sides; i++) {
             const x = Math.cos(i * angleStep) * radius;
             const y = Math.sin(i * angleStep) * radius;
@@ -175,40 +173,69 @@ AFRAME.registerComponent('polygon', {
         const angleStep = (Math.PI * 2) / sides;
         const sideLength = 2 * radius * Math.sin(Math.PI / sides);
 
+        let previousHighlight = null;
+
         /**
-        * TODO
         * Affichage des informations de la station associée au rectangle où l'on souhaite cliquer
         */
+
         AFRAME.registerComponent('click-listener', {
             init: function () {
                 this.el.addEventListener('click', () => {
-                    const data = this.userData;
+                    const mesh = this.el.getObject3D('mesh');
+                    const data = mesh?.userData;
+
+                    // Appliquer une couleur sur la mesure sélectionnée + mise à jour si l'on clique sur une autre mesure
+                    if (previousHighlight && previousHighlight.parent) {
+                        previousHighlight.parent.remove(previousHighlight);
+                        previousHighlight = null;
+                    }
+
+                    if (mesh) {
+                        const outlineGeometry = mesh.geometry.clone();
+                        const outlineMaterial = new THREE.MeshBasicMaterial({
+                            color: '#ff0000',
+                            opacity: 0.3,
+                            transparent: true,
+                            depthWrite: false,
+                        });
+
+                        const outline = new THREE.Mesh(outlineGeometry, outlineMaterial);
+                        outline.scale.set(1.1, 1.1, 1.1);
+                        mesh.parent.add(outline);
+
+                        const scale = 1.1;
+                        outline.scale.set(scale, scale, scale);
+                        outline.position.copy(mesh.position);
+                        outline.rotation.copy(mesh.rotation);
+
+                        mesh.parent.add(outline);
+
+                        previousHighlight = outline;
+                    }
 
                     infoPanel.style.display = 'block';
-                    console.log(`Mesure sélectionnée : ${data}`);
 
                     if (!data) {
-                        infoPanel.innerHTML = `<h1>Aucune donnée récupérée.</h1>`
+                        infoPanel.innerHTML = `<h1>Aucune donnée récupérée.</h1>`;
                         console.error("Aucune donnée récupérée.");
                         return;
                     }
 
-                    console.log(`Mesure sélectionnée : ${data}`);
+                    const info = data.infosStation;
 
                     infoPanel.innerHTML = `
-                <h1> TEST </h1>
-                <h2> ${data.commune} </h2>
-                <p><span class='bold'>Code BSS:</span> ${data.codeBSS} </p>
-                <p><span class='bold'>Altitude:</span> ${data.altitude} </p>
-                <p><span class='bold'>Profondeur:</span> ${data.profondeurNappe} </p>
-                <hr/>
-                <h3>Mesures</h3>
-                <p><span class='bold'>Date de la mesure:</span> ${data.date_mesure} </p>
-                <p><span class='bold'>Mesure:</span> ${data.niveauNappe} </p>
-                <p><span class='bold'>Mesure minimum:</span> ${data.niveauMin} </p>
-                <p><span class='bold'>Mesure maximum:</span> ${data.niveauMax} </p>
-              `;
-
+                        <h2> ${info.commune} </h2>
+                        <p><span class='bold'>Code BSS:</span> ${info.codeBSS} </p>
+                        <p><span class='bold'>Altitude:</span> ${info.altitude} </p>
+                        <p><span class='bold'>Profondeur:</span> ${info.profondeurNappe} </p>
+                        <hr/>
+                        <h3 class='bold'>Mesures</h3>
+                        <p><span class='bold'>Date de la mesure:</span> ${info.date_mesure} </p>
+                        <p><span class='bold'>Niveau de la nappe:</span> ${info.niveauNappe} </p>
+                        <p><span class='bold'>Niveau minimum sur l'intervalle:</span> ${info.niveauMin} </p>
+                        <p><span class='bold'>Niveau maximum sur l'intervalle:</span> ${info.niveauMax} </p>
+                    `;
                 });
             }
         });
@@ -235,16 +262,45 @@ AFRAME.registerComponent('polygon', {
             const dirX = endX - startX;
             const dirZ = endZ - startZ;
 
+            /**
+            * Affichage des du nom de la commune à la base de la série de mesures
+            */
+            const labelDistance = 0.33;
+            const labelHeight = 0.1;
+
+            const labelX = startX + dirX * labelDistance;
+            const labelZ = startZ + dirZ * labelDistance;
+            const labelY = labelHeight;
+
+            const angleRad = Math.atan2(dirZ, dirX);
+            const angleDeg = -THREE.MathUtils.radToDeg(angleRad);
+
+            const labelEntity = document.createElement('a-entity');
+            labelEntity.setAttribute('position', `${labelX} ${labelY} ${labelZ}`);
+            labelEntity.setAttribute('rotation', `-90 ${angleDeg} -90`);
+            labelEntity.setAttribute('text', {
+                font: "https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Maël/custom-font-a-Frame/custom-a-frame.fnt",
+                value: stationInformations.codeBSS || 'Ville',
+                color: '#FFF',
+                align: 'left',
+                width: 4,
+                baseline: 'bottom',
+                wrapCount: 40
+            });
+
+            this.el.appendChild(labelEntity);
+
+
             for (let j = 0; j < dataCount; j++) {
                 const value = dataValues[j].niveauNappe;
 
-                //déterminer l'opacité du rectangle de mesure si l'une des mesures en une chaine vide ou NULL
+                // Déterminer l'opacité du rectangle de mesure si l'une des mesures en une chaine vide ou NULL
                 const opacity = !value ? 0 : 1;
 
                 const grayValue = getGrayColor(value, min, max);
                 const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
 
-                //Set les dimensions des rectangles de mesure
+                // Set les dimensions des rectangles de mesure
                 const height = 0.25;
                 const width = sideLength;
                 const depth = 0.01;
@@ -258,17 +314,16 @@ AFRAME.registerComponent('polygon', {
                 });
                 const rectangle = new THREE.Mesh(rectangleGeometry, rectangleMaterial);
 
-                //Placement des rectangles de mesure contre les côtés du polygone
+                // Placement des rectangles de mesure contre les côtés du polygone
                 const progress = 0.5;
                 const posX = startX + dirX * progress;
                 const posZ = startZ + dirZ * progress;
 
-                //Gestion de la hauteur verticale (en fonction de la hauteur d'une mesure de la série sur le polygone pour qu'il soit au bon niveau)
+                // Gestion de la hauteur verticale (en fonction de la hauteur d'une mesure de la série sur le polygone pour qu'il soit au bon niveau)
                 const posY = j * height + height / 2;
 
                 rectangle.position.set(posX, posY, posZ);
 
-                //Trouver l'angle du côté du polygone pour y attcher nos rectangles de mesures
                 const sideAngle = Math.atan2(dirZ, dirX);
                 rectangle.rotation.y = -sideAngle;
 
@@ -287,17 +342,67 @@ AFRAME.registerComponent('polygon', {
                         niveauMin: min || null,
                         niveauMax: max || null
                     }
-                };
-
-                //TODO
+                }
 
                 rectangle.userData = tabtest;
-
-                // console.log('userData :', rectangle.userData);
 
                 this.el.appendChild(rectangle.el);
                 this.el.object3D.add(rectangle);
             }
         }
     }
+});
+
+/**
+ * Gestion du champ pour mettre en évidence le nom d'une station
+ */
+
+searchImput = document.getElementById('searchInput');
+searchButton = document.getElementById('search');
+resetButton = document.getElementById('reset');
+
+let communeLabels = [];
+
+function resetLabelColor() {
+    communeLabels.forEach(label => {
+        label.setAttribute('text', 'color', '#FFF');
+    });
+}
+
+function searchStation() {
+    const searchTerm = searchImput.value.trim().toLowerCase();
+
+    if (searchTerm) {
+    resetLabelColor();
+
+        /**
+         * Check le tableau "departementStationsInformations.stations"
+         * Regarder si le code BSS tapé correspond à un code BSS dans le tableau
+         * Regarder si le nom de la commune tapé correspond à un code BSS dans le tableau
+         * Si oui, on change la couleur du texte de la station
+         * Sinon, rien ne se passe ou alerte "Aucune station trouvée"
+         */
+
+        const found = departementStationsInformations.stations.find(station => {
+        station.codeBSS == searchTerm || station.commune == searchTerm;
+        });
+
+        console.log(found);
+    }
+}
+
+document.addEventListener('stationsDataLoaded', () => {
+    communeLabels = Array.from(document.querySelectorAll('a-entity[text]'));
+
+    searchButton.addEventListener('click', searchStation);
+    resetButton.addEventListener('click', () => {
+        searchImput.value = '';
+        resetLabelColor();
+    });
+
+    searchImput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            searchStation();
+        }
+    });
 });
