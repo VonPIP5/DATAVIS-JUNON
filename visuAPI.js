@@ -8,6 +8,7 @@
 /**
  * Déclaration des variables
  */
+
 const stationsData = JSON.parse(sessionStorage.getItem('stationsData'));
 
 let dateDebut = stationsData.dateDebut;
@@ -169,6 +170,7 @@ AFRAME.registerComponent('polygon', {
     /**
      * Création des rectangles de mesures de données en greyscale
      */
+
     createDataRectangles: function (sides, maxDataCount, seriesMinMax, radius) {
         const angleStep = (Math.PI * 2) / sides;
         const sideLength = 2 * radius * Math.sin(Math.PI / sides);
@@ -240,7 +242,6 @@ AFRAME.registerComponent('polygon', {
             }
         });
 
-
         for (let i = 0; i < sides; i++) {
             const stationInformations = departementStationsInformations.stations[i];
             const serie = stationInformations?.mesuresNappes;
@@ -263,8 +264,9 @@ AFRAME.registerComponent('polygon', {
             const dirZ = endZ - startZ;
 
             /**
-            * Affichage des du nom de la commune à la base de la série de mesures
+            * Affichage des du code BSS de la station à la base de la série de mesures
             */
+
             const labelDistance = 0.33;
             const labelHeight = 0.1;
 
@@ -276,11 +278,14 @@ AFRAME.registerComponent('polygon', {
             const angleDeg = -THREE.MathUtils.radToDeg(angleRad);
 
             const labelEntity = document.createElement('a-entity');
+            labelEntity.setAttribute("id", "codeBSSLabel");
+            labelEntity.setAttribute('class', 'clickable');
+
             labelEntity.setAttribute('position', `${labelX} ${labelY} ${labelZ}`);
             labelEntity.setAttribute('rotation', `-90 ${angleDeg} -90`);
             labelEntity.setAttribute('text', {
                 font: "https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Maël/custom-font-a-Frame/custom-a-frame.fnt",
-                value: stationInformations.codeBSS || 'Ville',
+                value: stationInformations.codeBSS || null,
                 color: '#FFF',
                 align: 'left',
                 width: 4,
@@ -288,8 +293,12 @@ AFRAME.registerComponent('polygon', {
                 wrapCount: 40
             });
 
-            this.el.appendChild(labelEntity);
+            labelEntity.addEventListener('click', () => {
+                console.log('Label BSS cliqué !');
+                highlightSerieByCodeBSS(stationInformations.codeBSS);
+            });
 
+            this.el.appendChild(labelEntity);
 
             for (let j = 0; j < dataCount; j++) {
                 const value = dataValues[j].niveauNappe;
@@ -357,52 +366,137 @@ AFRAME.registerComponent('polygon', {
  * Gestion du champ pour mettre en évidence le nom d'une station
  */
 
-searchImput = document.getElementById('searchInput');
+searchInput = document.getElementById('searchInput');
 searchButton = document.getElementById('search');
 resetButton = document.getElementById('reset');
 
-let communeLabels = [];
-
-function resetLabelColor() {
-    communeLabels.forEach(label => {
-        label.setAttribute('text', 'color', '#FFF');
-    });
-}
-
 function searchStation() {
-    const searchTerm = searchImput.value.trim().toLowerCase();
+    const searchTerm = searchInput.value;
 
     if (searchTerm) {
-    resetLabelColor();
+        const found = departementStationsInformations.stations.find(station =>
+            station.codeBSS == searchTerm || station.commune.toLowerCase() == searchTerm.toLowerCase());
 
-        /**
-         * Check le tableau "departementStationsInformations.stations"
-         * Regarder si le code BSS tapé correspond à un code BSS dans le tableau
-         * Regarder si le nom de la commune tapé correspond à un code BSS dans le tableau
-         * Si oui, on change la couleur du texte de la station
-         * Sinon, rien ne se passe ou alerte "Aucune station trouvée"
-         */
+        if (found) {
+            const stationCode = found.codeBSS;
 
-        const found = departementStationsInformations.stations.find(station => {
-        station.codeBSS == searchTerm || station.commune == searchTerm;
-        });
+            const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
 
-        console.log(found);
+            allLabels.forEach(label => {
+                const textAttr = label.getAttribute('text');
+                const labelText = textAttr?.value;
+
+                label.setAttribute('text', {
+                    ...textAttr,
+                    color: labelText === stationCode ? '#FF0000' : '#FFFFFF'
+                });
+            });
+            highlightSerieByCodeBSS(stationCode);
+        }
     }
 }
 
-document.addEventListener('stationsDataLoaded', () => {
-    communeLabels = Array.from(document.querySelectorAll('a-entity[text]'));
+searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        searchStation();
+    }
+});
+searchButton.addEventListener('click', () => {
+    searchStation();
+});
+resetButton.addEventListener('click', () => {
+    searchInput.value = '';
 
-    searchButton.addEventListener('click', searchStation);
-    resetButton.addEventListener('click', () => {
-        searchImput.value = '';
-        resetLabelColor();
-    });
+    if (currentHighlight && currentHighlight.parent) {
+        currentHighlight.parent.remove(currentHighlight);
+        currentHighlight = null;
+    }
 
-    searchImput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            searchStation();
-        }
+    const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
+    allLabels.forEach(label => {
+        const textAttr = label.getAttribute('text');
+        label.setAttribute('text', {
+            ...textAttr,
+            color: '#FFFFFF'
+        });
     });
 });
+
+/**
+ * Coloriser en rouge la série de mesures sélectionnée
+ */
+
+let currentHighlight = null;
+
+function highlightSerieByCodeBSS(codeBSS) {
+    const meshGroup = document.querySelector('[polygon]');
+    if (!meshGroup) {
+        console.error('Pas trouvé [polygon]');
+        return;
+    }
+
+    if (currentHighlight && currentHighlight.parent) {
+        currentHighlight.parent.remove(currentHighlight);
+        currentHighlight = null;
+    }
+
+    const heightPerMeasure = 0.25;
+
+    departementStationsInformations.stations.forEach((station, index) => {
+        if (station.codeBSS !== codeBSS) return;
+
+        const serie = station.mesuresNappes;
+        const nbMesures = serie.length;
+
+        const angleStep = (Math.PI * 2) / departementStationsInformations.stations.length;
+        const angle = index * angleStep;
+        const nextAngle = (index + 1) * angleStep;
+
+        const radius = 2;
+        const startX = Math.cos(angle) * radius;
+        const startZ = Math.sin(angle) * radius;
+        const endX = Math.cos(nextAngle) * radius;
+        const endZ = Math.sin(nextAngle) * radius;
+
+        const dirX = endX - startX;
+        const dirZ = endZ - startZ;
+
+        const midX = startX + dirX * 0.5;
+        const midZ = startZ + dirZ * 0.5;
+
+        const totalHeight = nbMesures * heightPerMeasure;
+
+        const highlightGeometry = new THREE.BoxGeometry(
+            2 * radius * Math.sin(Math.PI / departementStationsInformations.stations.length),
+            totalHeight,
+            0.015
+        );
+
+        const highlightMaterial = new THREE.MeshBasicMaterial({
+            color: '#ff0000',
+            opacity: 0.15,
+            transparent: true,
+            depthWrite: false
+        });
+
+        const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+
+        highlight.position.set(midX, totalHeight / 2, midZ);
+        highlight.rotation.y = -Math.atan2(dirZ, dirX);
+
+        meshGroup.object3D.add(highlight);
+        currentHighlight = highlight;
+
+        const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
+
+        allLabels.forEach(label => {
+            const textAttr = label.getAttribute('text');
+            const labelText = textAttr?.value;
+
+            label.setAttribute('text', {
+                ...textAttr,
+                color: labelText === codeBSS ? '#FF0000' : '#FFFFFF'
+            });
+        });
+    });
+}
