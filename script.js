@@ -819,7 +819,7 @@ function afficheResultatComplet(infos, url1StationLCP, dataPoints, url1StationLC
         })
         .then(data => {
             let tabJustDate = []
-
+        
             if (data.count == 0) {
                 let resultat0 = document.createElement("p")
                 resultat0.classList.add("col-6")
@@ -1661,7 +1661,7 @@ function explicationScore(score) {
 function graphNiveauDeauTR(tabDataTR, codeBss, div3erGraphique, result, lien2Graph1, lien2Graph2) {
     const labels = [];
     const values = [];
-
+if (codeBss=="04307X0001/P1"){ console.log(codeBss,tabDataTR);};
     let tableauCroissant = []
 
     let tabDataTRChrono = tabDataTR.reverse()
@@ -1675,7 +1675,7 @@ function graphNiveauDeauTR(tabDataTR, codeBss, div3erGraphique, result, lien2Gra
         tableauCroissant.push(point.value);
         tableauCroissant.sort((a, b) => a - b);
     })
-
+    
     let valeurMediane
     let q1
     let q3
