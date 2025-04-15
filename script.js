@@ -1,5 +1,129 @@
+// ______________  Déclaration des variables ________________
+const joursMesures = 15;
+let url
+let titre = document.querySelector("#titre");
+let parametre = document.querySelector("#parametre");
+let question = document.querySelector("#question");
+let afficher = document.querySelector("#afficher");
+let infoSup = document.querySelector("#infoSup");
+let boutonCodeBSS = document.querySelector("#boutonCodeBSS");
+let forYou = document.querySelector("#forYou");
+let espaceGraphique = document.querySelector("#espaceGraphique");
+let row1Col1 = document.querySelector("#row1Col1");
+let boutonPeriodeSpecifique = document.querySelector("#boutonPeriodeSpecifique");
+
+let listeCPiezometriques = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques"
+let listeCPiezometriquesTR = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques_tr"
+let listeStations = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations"
+
+let temps = document.querySelector(".h2");
+let parametreTemps = document.querySelector("#referenceTemporel");
+let selectTemps = document.querySelector("#selectTemps");
+let solutionTemporel2 = document.querySelector("#solutionTemporel2")
+let choisirTempsManuel = document.querySelector("#choisirTempsManuel")
+let choisirTempsStart = document.querySelector("#choisirTempsStart")
+let choisirTempsFinish = document.querySelector("#choisirTempsFinish")
+let codeBssSelectioner = document.querySelector("#codeBssSelectioner")
+
+afficher.innerHTML = ""
+
+// ------------------------- Bouton pour la visualisation 3D en colonne/tube -------------------------
+
+function ajouterBoutonVue3D() {
+    let buttonVisu = document.getElementById('3dVisu');
+
+    const boutonExistant = document.getElementById("boutonVue3D");
+    if (boutonExistant) {
+        boutonExistant.remove();
+    }
+
+    const boutonVue3D = document.createElement("button");
+    boutonVue3D.id = "boutonVue3D";
+
+    console.log(choisirTempsStart.value, choisirTempsFinish.value || 'aucune information');
+
+    let url = '';
+    let dateDebut = choisirTempsStart.value;
+    let dateFin = choisirTempsFinish.value;
+
+    if (!dateDebut && !dateFin) {
+        let today = new Date();
+        let XdaysAgo = new Date();
+        XdaysAgo.setDate(today.getDate() - joursMesures);
+
+        dateDebut = XdaysAgo.toISOString().split('T')[0];
+        dateFin = today.toISOString().split('T')[0];
+
+        boutonVue3D.textContent = `Vue 3D des ${joursMesures} derniers jours`;
+    } else {
+        dateDebut = invertDate(dateDebut);
+        dateFin = invertDate(dateFin);
+        boutonVue3D.textContent = "Vue 3D sur la période de temps";
+    }
+
+    url = `${listeStations}?code_departement=${selectDepartement.value}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+
+    console.log("URL API utilisée :", url);
+
+    buttonVisu.appendChild(boutonVue3D);
+
+    boutonVue3D.addEventListener("click", async () => {
+        try {
+            console.log(dateDebut, dateFin);
+
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data.data || data.data.length === 0) {
+                console.warn("Aucune donnée trouvée.");
+                return;
+            }
+
+            const departementStationsInformations = {
+                stations: data.data.map(station => ({
+                    commune: station.nom_commune,
+                    codeBss: station.code_bss,
+                    altitude: station.altitude_station
+                })),
+                departement: data.data[0].nom_departement,
+                departementCode: selectDepartement.value,
+                dateDebut,
+                dateFin,
+            };
+
+            sessionStorage.setItem("stationsData", JSON.stringify(departementStationsInformations));
+            console.log(departementStationsInformations);
+            window.location.href = "visu.html";
+
+        } catch (error) {
+            console.error("Erreur lors de la récupération des données des stations :", error);
+        }
+    });
+}
+
+selectDepartement.addEventListener("change", () => {
+    if (selectDepartement.value !== "choisirDepartement") {
+        ajouterBoutonVue3D();
+    }
+});
+
+boutonPeriodeSpecifique.addEventListener("click", () => {
+    if (selectDepartement.value !== "choisirDepartement") {
+        if (choisirTempsStart.value && choisirTempsFinish.value) {
+            ajouterBoutonVue3D();
+        } else {
+            choisirTempsStart.value = "";
+            choisirTempsFinish.value = "";
+            ajouterBoutonVue3D();
+        }
+    }
+});
+
+// ------------------------- Fin de bouton pour la visualisation 3D en colonne/tube -------------------------
+
 // ________________________       MAPS        _______________________________
-window.open3DView = function(codeBss) {
+window.open3DView = function (codeBss) {
     // Trouver le marker correspondant
     let targetMarker;
     map.eachLayer(layer => {
@@ -17,17 +141,17 @@ window.open3DView = function(codeBss) {
     const stationData = targetMarker.info;
     let waterLevels = [];
     let lastValue = null;
-    
+
     // Récupérer les données du graphique (WIP)
     try {
         const chartId = 'myChartNiveau' + codeBss;
         const chart = Chart.getChart(chartId);
-        
+
         if (chart && chart.data && chart.data.datasets && chart.data.datasets[0].data) {
             waterLevels = chart.data.datasets[0].data
                 .map(point => typeof point === 'object' ? point.value : point)
                 .filter(val => val !== undefined && val !== null);
-            
+
             if (waterLevels.length > 0) {
                 lastValue = waterLevels[waterLevels.length - 1];
             }
@@ -52,16 +176,16 @@ window.open3DView = function(codeBss) {
     };
 
     console.log("Données à sauvegarder:", visualizationData);
-    
+
     // Sauvegarde et redirection
     try {
         sessionStorage.removeItem('waterData');
         sessionStorage.setItem('waterData', JSON.stringify(visualizationData));
-        console.log("sessionStorage après sauvegarde:", sessionStorage.getItem('waterData')); 
-        
+        console.log("sessionStorage après sauvegarde:", sessionStorage.getItem('waterData'));
+
         // Ouvrir dans un nouvel onglet
         const newWindow = window.open('http://127.0.0.1:5500/versiontest.html', '_blank');
-        
+
         // Vérifier que la fenêtre s'est ouverte
         if (!newWindow) {
             alert("Veuillez autoriser les popups pour cette fonctionnalité");
@@ -115,35 +239,6 @@ legend.onAdd = function (map) {
 };
 
 legend.addTo(map);
-
-
-// ______________  Déclaration des variables ________________
-let url
-let titre = document.querySelector("#titre");
-let parametre = document.querySelector("#parametre");
-let question = document.querySelector("#question");
-let afficher = document.querySelector("#afficher");
-let infoSup = document.querySelector("#infoSup");
-let boutonCodeBSS = document.querySelector("#boutonCodeBSS");
-let forYou = document.querySelector("#forYou");
-let espaceGraphique = document.querySelector("#espaceGraphique");
-let row1Col1 = document.querySelector("#row1Col1");
-let boutonPeriodeSpecifique = document.querySelector("#boutonPeriodeSpecifique");
-
-let listeCPiezometriques = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques"
-let listeCPiezometriquesTR = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques_tr"
-let listeStations = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations"
-
-let temps = document.querySelector(".h2");
-let parametreTemps = document.querySelector("#referenceTemporel");
-let selectTemps = document.querySelector("#selectTemps");
-let solutionTemporel2 = document.querySelector("#solutionTemporel2")
-let choisirTempsManuel = document.querySelector("#choisirTempsManuel")
-let choisirTempsStart = document.querySelector("#choisirTempsStart")
-let choisirTempsFinish = document.querySelector("#choisirTempsFinish")
-let codeBssSelectioner = document.querySelector("#codeBssSelectioner")
-
-afficher.innerHTML = ""
 
 // ____________________  RECUPERER LES CODES BSS ____________________
 let URLDeps = []
@@ -254,11 +349,16 @@ function calculeTemps() {
 }
 
 
-// _______________ Fonction qui inverse le format de la date :   DD-MM-YYYY  -->   YYYY-MM-DD _______________
+// _______________ Fonction qui inverse le format de la date :   DD-MM-YYYY ou YYYY-MM-DD _______________
 
 function inverseFormatDate(date) {
     let [year, month, day] = date.split("-")
     return `${day}-${month}-${year}`;
+}
+
+function invertDate(date) {
+    const [day, month, year] = date.split('-');
+    return `${year}-${month}-${day}`;
 }
 
 // ________________ Fonction qui affiche une map à l'empassement demander ________________ 
@@ -518,7 +618,7 @@ function chercheStations(url) {
 // _____ fonction pour les couleurs marqueur quand c'est un affichage simple _____
 function markerCouleurBleu(info1erUrl, tousLesMarkers) {
     let marker = L.marker([info1erUrl.y, info1erUrl.x], { icon: defaultIcon, originalIcon: defaultIcon }).addTo(map);
-    
+
     const popupContent = `
         <b>${info1erUrl.nom_commune}</b>
         <p>${info1erUrl.nom_departement}<br>
@@ -528,13 +628,13 @@ function markerCouleurBleu(info1erUrl, tousLesMarkers) {
             Visualiser en 3D
         </button>
     `;
-    
+
     marker.bindPopup(popupContent);
     marker.info = info1erUrl;
-    
+
     tousLesMarkers.push(marker);
     clickMarkerBleu(tousLesMarkers);
-    
+
     marker.addEventListener("click", () => {
         afficheForYou(info1erUrl.code_bss);
     });
@@ -564,7 +664,7 @@ function clickMarkerBleu(tousLesMarkers) {
 
 function markerCouleurViolet(info1erUrl, tousLesMarkers) {
     let marker = L.marker([info1erUrl.y, info1erUrl.x], { icon: IconInfo, originalIcon: IconInfo }).addTo(map);
-    
+
     const popupContent = `
         <b>${info1erUrl.nom_commune}</b>
         <p>${info1erUrl.nom_departement}<br>
@@ -574,13 +674,13 @@ function markerCouleurViolet(info1erUrl, tousLesMarkers) {
             Visualiser en 3D
         </button>
     `;
-    
+
     marker.bindPopup(popupContent);
     marker.info = info1erUrl;
-    
+
     tousLesMarkers.push(marker);
     markerViolet(tousLesMarkers);
-    
+
     marker.addEventListener("click", () => {
         afficheForYou(info1erUrl.code_bss);
     });
