@@ -1,0 +1,4 @@
+penser à changer le lien git pour la font si le projet doit être mis autre part
+peut-être faire des environnements en fonction des sècheresse ou non (le représenter peut-être avec un endroit qui ressemble à un hologram qui tourne sur lui même avec un desert si il manque, ou un sol qui éclaire une fleur si on est bon)
+faire une carte en vu isométrique avec les tubes
+faire plusieurs modes de vus pour schéma piézomètre : le mode aquarium où celui par défaut où l'eau est totalement en surface, le mode bassin où le reste de l'altitude n'est pas montré, la hauteur s'arrête à la fin de la hauteur du piézomètre et on ne va pas jusqu'au niveau de la mère (la variable altitude), et enfin le mode piscine où le schéma 3d est totalement submergé sous le sol et dont on peut voir la valeur.

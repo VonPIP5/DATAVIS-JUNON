@@ -123,8 +123,8 @@ boutonPeriodeSpecifique.addEventListener("click", () => {
 // ------------------------- Fin de bouton pour la visualisation 3D en colonne/tube -------------------------
 
 // ________________________       MAPS        _______________________________
-window.open3DView = function (codeBss) {
-    // Trouver le marker correspondant
+window.open3DView = function(codeBss) {
+    // 1. Trouver le marker correspondant
     let targetMarker;
     map.eachLayer(layer => {
         if (layer instanceof L.Marker && layer.info && layer.info.code_bss === codeBss) {
@@ -137,56 +137,112 @@ window.open3DView = function (codeBss) {
         return;
     }
 
-    // Préparer les données
-    const stationData = targetMarker.info;
-    let waterLevels = [];
-    let lastValue = null;
+    // 2. Récupérer les dates sélectionnées
+    let dateDebut, dateFin;
+    if (choisirTempsStart.value && choisirTempsFinish.value) {
+        dateDebut = choisirTempsStart.value;
+        dateFin = choisirTempsFinish.value;
+    } else if (selectTemps.value !== "choisirTemps") {
+        calculeTemps();
+        dateDebut = inverseFormatDate(dateDeDebutBonFormat);
+        dateFin = inverseFormatDate(dateActuelleBonFormat);
+    } else {
+        dateDebut = targetMarker.info.date_debut_mesure;
+        dateFin = targetMarker.info.date_fin_mesure;
+    }
 
-    // Récupérer les données du graphique (WIP)
+    // 3. Préparer l'objet de données pour la 3D
+    const visualizationData = {
+        waterLevels: [],
+        stationInfo: {
+            codeBss: targetMarker.info.code_bss,
+            commune: targetMarker.info.nom_commune,
+            departement: targetMarker.info.nom_departement,
+            altitude: targetMarker.info.altitude_station,
+            profondeur: targetMarker.info.profondeur_investigation,
+            coordinates: { lat: targetMarker.info.y, lng: targetMarker.info.x },
+            dateDebut: dateDebut,
+            dateFin: dateFin
+        },
+        meteoData: null,
+        statistics: null,
+        chartData: null
+    };
+
+    // 4. Récupérer les données du graphique
     try {
         const chartId = 'myChartNiveau' + codeBss;
         const chart = Chart.getChart(chartId);
+        
+        if (chart && chart.data) {
+            visualizationData.waterLevels = chart.data.datasets[0].data
+                .map((point, index) => ({
+                    value: typeof point === 'object' ? point.value : point,
+                    date: chart.data.labels[index] || `${index + 1}/${new Date().getFullYear()}`
+                }));
+            
+            visualizationData.lastMeasurement = visualizationData.waterLevels.length > 0 
+                ? visualizationData.waterLevels[visualizationData.waterLevels.length - 1].value 
+                : null;
 
-        if (chart && chart.data && chart.data.datasets && chart.data.datasets[0].data) {
-            waterLevels = chart.data.datasets[0].data
-                .map(point => typeof point === 'object' ? point.value : point)
-                .filter(val => val !== undefined && val !== null);
-
-            if (waterLevels.length > 0) {
-                lastValue = waterLevels[waterLevels.length - 1];
-            }
+            // Sauvegarder les données du graphique pour la reconstruction
+            visualizationData.chartData = {
+                labels: chart.data.labels,
+                datasets: chart.data.datasets
+            };
         }
     } catch (e) {
         console.error("Erreur lecture graphique:", e);
     }
 
-    // sauvegarder dans localStorage
-    const visualizationData = {
-        values: waterLevels,
-        maxValue: Math.max(...waterLevels),
-        minValue: Math.min(...waterLevels),
-        stationInfo: {
-            codeBss: stationData.code_bss,
-            commune: stationData.nom_commune,
-            departement: stationData.nom_departement,
-            altitude: stationData.altitude_station,
-            profondeur: stationData.profondeur_investigation
-        },
-        lastMeasurement: lastValue,
-    };
-
-    console.log("Données à sauvegarder:", visualizationData);
-
-    // Sauvegarde et redirection
+    // 5. Récupérer les données météo si disponibles
     try {
-        sessionStorage.removeItem('waterData');
+        const tempChartId = 'myChartTemperature' + codeBss;
+        const tempChart = Chart.getChart(tempChartId);
+        const humidChartId = 'myChartHumidite' + codeBss;
+        const humidChart = Chart.getChart(humidChartId);
+
+        if (tempChart && humidChart) {
+            visualizationData.meteoData = {
+                temperature: tempChart.data.datasets[0].data,
+                humidity: humidChart.data.datasets[0].data,
+                dates: tempChart.data.labels
+            };
+        }
+    } catch (e) {
+        console.error("Erreur lecture données météo:", e);
+    }
+
+    // 6. Récupérer les statistiques (quartiles/médiane)
+    try {
+        const stationElement = document.getElementById(codeBss);
+        if (stationElement) {
+            const infoElements = stationElement.querySelectorAll('.paraMQ');
+            if (infoElements.length >= 2) {
+                visualizationData.statistics = {
+                    current: {
+                        median: parseFloat(infoElements[0].textContent.match(/Médiane : ([\d.]+)/)[1]),
+                        q1: parseFloat(infoElements[0].textContent.match(/Quartile 1: ([\d.]+)/)[1]),
+                        q3: parseFloat(infoElements[0].textContent.match(/Quartile 3 : ([\d.]+)/)[1])
+                    },
+                    historical: {
+                        median: parseFloat(infoElements[1].textContent.match(/Médiane : ([\d.]+)/)[1]),
+                        q1: parseFloat(infoElements[1].textContent.match(/Quartile 1 : ([\d.]+)/)[1]),
+                        q3: parseFloat(infoElements[1].textContent.match(/Quartile 3 : ([\d.]+)/)[1])
+                    }
+                };
+            }
+        }
+    } catch (e) {
+        console.error("Erreur lecture statistiques:", e);
+    }
+
+    // 7. Sauvegarde et redirection
+    try {
+        console.log("Données envoyées à la 3D:", visualizationData);
         sessionStorage.setItem('waterData', JSON.stringify(visualizationData));
-        console.log("sessionStorage après sauvegarde:", sessionStorage.getItem('waterData'));
-
-        // Ouvrir dans un nouvel onglet
-        const newWindow = window.open('http://127.0.0.1:5500/versiontest.html', '_blank');
-
-        // Vérifier que la fenêtre s'est ouverte
+        
+        const newWindow = window.open('versiontest copy.html', '_blank');
         if (!newWindow) {
             alert("Veuillez autoriser les popups pour cette fonctionnalité");
         }
@@ -863,7 +919,7 @@ function afficheResultatComplet(infos, url1StationLCP, dataPoints, url1StationLC
         })
         .then(data => {
             let tabJustDate = []
-
+        
             if (data.count == 0) {
                 let resultat0 = document.createElement("p")
                 resultat0.classList.add("col-6")
@@ -1705,7 +1761,7 @@ function explicationScore(score) {
 function graphNiveauDeauTR(tabDataTR, codeBss, div3erGraphique, result, lien2Graph1, lien2Graph2) {
     const labels = [];
     const values = [];
-
+if (codeBss=="04307X0001/P1"){ console.log(codeBss,tabDataTR);};
     let tableauCroissant = []
 
     let tabDataTRChrono = tabDataTR.reverse()
@@ -1719,7 +1775,7 @@ function graphNiveauDeauTR(tabDataTR, codeBss, div3erGraphique, result, lien2Gra
         tableauCroissant.push(point.value);
         tableauCroissant.sort((a, b) => a - b);
     })
-
+    
     let valeurMediane
     let q1
     let q3

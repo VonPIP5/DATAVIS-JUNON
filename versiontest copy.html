@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Visualisation 3D - Nappe Phreatique</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <a-scene>
+        <!-- Mur -->
+        <a-entity id="mur">
+            <!-- Mur 1 (Face avant) -->
+            <a-plane position="0 2.355 -5.2" rotation="0 0 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 2 (Avant-droite) -->
+            <a-plane position="4.5 2.355 -2.6" rotation="0 -60 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 3 (Arriere-droite) -->
+            <a-plane position="4.5 2.355 2.6" rotation="0 -120 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 4 (Face arriere) -->
+            <a-plane position="0 2.355 5.2" rotation="0 180 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 5 (Arriere-gauche) -->
+            <a-plane position="-4.5 2.355 2.6" rotation="0 120 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+            
+            <!-- Mur 6 (Avant-gauche) -->
+            <a-plane position="-4.5 2.355 -2.6" rotation="0 60 0" width="6.93" height="4.75" shadow="cast:true; receive:true" static-body
+            material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
+        </a-entity>
+        
+        <!-- Plafond -->
+        <a-entity id="plafond">
+            <a-circle position="0 4.75 0" rotation="90 0 0" radius="7" 
+                material="src: ./textures/metal_black1k.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 3 3; emissive: #000000; emissiveIntensity: 3;">
+            </a-circle>
+            <a-entity id="lumNappesToit" light="type: spot; color: #FFFFFF; intensity: 0.9; castShadow: true; angle: 35; penumbra: 0.7" position="0 4.7 0" rotation="-90 0 0"></a-entity>
+            <a-entity id="lumNappesSol" light="type: spot; color: #FFFFFF; intensity: 0.9; castShadow: true; angle: 35; penumbra: 0.7" position="0 -0.125 0" rotation="90 0 0"></a-entity>
+        </a-entity>
+
+        <!-- Sol -->
+        <a-circle id="sol" position="0 0 0" radius="7" rotation="-90 0 0"
+            material="src: ./textures/test-sol.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 8 8;" static-body segments-radial="6">
+        </a-circle>
+
+        <!-- Plinthes bas -->
+        <a-entity id="plinthes-Bas">
+            <!-- Face avant -->
+            <a-box position="0 0 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-droite -->
+            <a-box position="4.5 0 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arriere-droite -->
+            <a-box position="4.5 0 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Face arriere -->
+            <a-box position="0 0 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arriere-gauche -->
+            <a-box position="-4.5 0 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-gauche -->
+            <a-box position="-4.5 0 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        </a-entity>    
+        
+        <!-- Plinthes haut -->
+        <a-entity id="plinthes-Haut">
+            <!-- Face avant -->
+            <a-box position="0 4.75 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-droite -->
+            <a-box position="4.5 4.75 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arriere-droite -->
+            <a-box position="4.5 4.75 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Face arriere -->
+            <a-box position="0 4.75 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Arriere-gauche -->
+            <a-box position="-4.5 4.75 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        
+            <!-- Avant-gauche -->
+            <a-box position="-4.5 4.75 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" 
+            material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
+        </a-entity>  
+
+        <!-- profondeur terre -->
+        <a-entity geometry="primitive: cylinder; radius: 2.505; height: 3; segmentsRadial: 6"
+                id="water"
+                material="color: #692f0b; emissive: #692f0b; emissiveIntensity: 0.3" 
+                position="0 0 0" rotation="180 30 0" shadow="cast:true; receive:true" static-body>
+        </a-entity>
+
+        <!-- Nappe phreatique -->
+        <a-entity geometry="primitive: cylinder; radius: 2.5; height: 1.5; segmentsRadial: 6"
+            material="color: #1E88E5; emissive: #1E88E5; emissiveIntensity: 0.3"
+            position="0 0.75 0"
+            rotation="0 30 0"
+            shadow="cast:true; receive:true">
+        </a-entity>
+
+        <!-- Panneau de graphique -->
+        <a-entity id="chartPanel" position="4.45 2.4 -2.6" rotation="0 -60 0">
+            <a-plane id="chartPlane" width="4" height="3" material="color: white">
+            </a-plane>
+        </a-entity>
+
+        <!-- Panneau d'information principal -->
+        <a-entity id="infoPanel" position="-4.5 2.5 -2.5" rotation="0 60 0">
+            <a-plane width="3" height="3.3" color="#333" opacity="0.8">
+                <a-text id="infoText" value="Chargement..." 
+                        width="2.7" align="left" wrap-count="25"
+                        position="-1.1 0 0" color="white"
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+            </a-plane>
+        </a-entity>
+
+        <!-- Panneau meteo -->
+        <a-entity id="meteoPanel" position="4.5 2.5 2.5" rotation="0 -120 0">
+            <a-plane width="2.6" height="3" color="#333" opacity="0.8">
+                <a-text id="meteoText" value="Chargement meteo..." 
+                        width="2.7" align="left" wrap-count="25"
+                        position="-1 0 0" color="white"
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+            </a-plane>
+        </a-entity>
+
+        <!-- Panneau statistiques -->
+        <a-entity id="statsPanel" position="0 2.5 5.1" rotation="0 180 0">
+            <a-plane width="2.5" height="3" color="#333" opacity="0.8">
+                <a-text id="statsText" value="Chargement stats..." 
+                        width="2.7" align="left" wrap-count="30"
+                        position="-1 0 0" color="white"
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+            </a-plane>
+        </a-entity>
+
+        <!-- Affichage niveau d'eau -->
+        <a-entity id="waterLevelDisplay" position="0 4.5 0" rotation="0 180 0">
+            <a-plane position="0 -0.1 0.1" rotation="0 0 0" width="2.1" height="0.5"
+                material="color: #f5f5f5; opacity: 0.7; emissive: #f5f5f5; emissiveIntensity: 0.3" ></a-plane>
+            <a-box width="2.3" height="1" depth="0.1" color="#000000">
+                <a-text id="waterLevelText" value="" 
+                        width="3" align="center"
+                        position="0 -0.1 0.11" color="white"
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+            </a-box>
+            
+        </a-entity>
+
+        <!-- Camera -->
+        <a-entity position="0 0.2 -4.5" rotation="0 180 0">
+            <a-camera raycaster="objects: .interactive" far="12" id="camera" fov="100" 
+                look-controls="pointerLockEnabled: true; mouseDrag: true" wasd-controls="enabled: true" rotation="0 0 0">
+                <a-plane id="cursor"
+                        position="0 0 -1"
+                        width="0.12" 
+                        height="0.12" 
+                        material="src: ./textures/cursor.png; transparent: true; roughness: 100; metalness: 0;">
+                </a-plane>
+            </a-camera>
+        </a-entity>
+
+        <!-- Lumiere ambiante-->
+        <a-light type="ambient" color="#8899FF" intensity="0.2"></a-light>
+
+        <!-- Ciel -->
+        <a-sky color="#ECECEC"></a-sky>
+
+    </a-scene>
+    <script>
+        // Recuperation des donnees depuis le sessionStorage
+        const waterData = JSON.parse(sessionStorage.getItem('waterData')) || {
+            waterLevels: [
+                {value: 107.34, date: "01/01/2023"},
+                {value: 107.37, date: "02/01/2023"},
+                {value: 107.39, date: "03/01/2023"},
+                {value: 107.41, date: "04/01/2023"},
+                {value: 107.45, date: "05/01/2023"},
+                {value: 107.48, date: "06/01/2023"}
+            ],
+            lastMeasurement: {
+                value: 107.48,
+                profondeur: 12.6
+            },
+            stationInfo: { 
+                codeBss: "03627X0052/P1", 
+                commune: "Gémigny", 
+                departement: "Loiret", 
+                altitude: "117.6", 
+                coordinates: { lat: 47.5, lng: 1.5 },
+                dateDebut: "01/01/2023",
+                dateFin: "06/01/2023"
+            },
+            meteoData: {
+                temperature: [10, 11, 12, 13, 14, 15],
+                humidity: [80, 78, 75, 72, 70, 68],
+                dates: ["01/01/2023", "02/01/2023", "03/01/2023", "04/01/2023", "05/01/2023", "06/01/2023"]
+            },
+            statistics: {
+                current: {
+                    median: 107.40,
+                    q1: 107.36,
+                    q3: 107.44
+                },
+                historical: {
+                    median: 107.38,
+                    q1: 107.32,
+                    q3: 107.46
+                }
+            }
+        };
+    
+        // Fonction pour formater le texte avec saut de ligne
+        function formatText(content) {
+            return content.replace(/<br>/g, '\n');
+        }
+    
+        // Mise à jour des panneaux 3D
+        function updatePanels() {
+            // Panneau principal
+            const infoContent = `
+                ${waterData.stationInfo.commune}<br>
+                Département: ${waterData.stationInfo.departement}<br>
+                Code BSS: ${waterData.stationInfo.codeBss}<br>
+                Altitude: ${waterData.stationInfo.altitude} m<br>
+                Profondeur: ${waterData.lastMeasurement.profondeur} m<br>
+                Période: ${waterData.stationInfo.dateDebut} au ${waterData.stationInfo.dateFin}
+            `;
+            document.querySelector('#infoText').setAttribute('value', formatText(infoContent));
+    
+            // Panneau meteo
+            if (waterData.meteoData) {
+                const avgTemp = (waterData.meteoData.temperature.reduce((a, b) => a + b, 0) / waterData.meteoData.temperature.length).toFixed(1);
+                const avgHumidity = (waterData.meteoData.humidity.reduce((a, b) => a + b, 0) / waterData.meteoData.humidity.length).toFixed(1);
+                
+                const meteoContent = `
+                    Données météo<br>
+                    (Moyenne)<br>
+                    Température: ${avgTemp}°C<br>
+                    Humidite: ${avgHumidity}%<br>
+                    Période: ${waterData.meteoData.dates[0]}<br>
+                    à ${waterData.meteoData.dates[waterData.meteoData.dates.length-1]}
+                `;
+                document.querySelector('#meteoText').setAttribute('value', formatText(meteoContent));
+            }
+    
+            // Panneau stats
+            if (waterData.statistics) {
+                const statsContent = `
+                    Statistiques<br>
+                    Médiane actuelle: ${waterData.statistics.current.median.toFixed(2)}<br>
+                    Q1 actuel: ${waterData.statistics.current.q1.toFixed(2)}<br>
+                    Q3 actuel: ${waterData.statistics.current.q3.toFixed(2)}<br>
+                    Médiane historique: ${waterData.statistics.historical.median.toFixed(2)}<br>
+                    Q1 historique: ${waterData.statistics.historical.q1.toFixed(2)}<br>
+                    Q3 historique: ${waterData.statistics.historical.q3.toFixed(2)}
+                `;
+                document.querySelector('#statsText').setAttribute('value', formatText(statsContent));
+            }
+        }
+    
+        function setupWater() {
+            const waterElement = document.querySelector('#water');
+            const lastValue = waterData.lastMeasurement.value;
+            const profondeur = waterData.lastMeasurement.profondeur;
+            const altitude = parseFloat(waterData.stationInfo.altitude);
+            const values = waterData.waterLevels.map(item => item.value);
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            const waterLevelContent = `Niveau: ${waterData.lastMeasurement.value.toFixed(2)} m\n(Min: ${minValue.toFixed(2)} m / Max: ${maxValue.toFixed(2)} m)`;
+            document.querySelector('#waterLevelText').setAttribute('value', waterLevelContent);
+
+            const maxDepthVisual = 3;
+            const scaledHeight = (profondeur / altitude) * maxDepthVisual;
+
+            const waterY = (1.5 + 0.01) - scaledHeight / 2;
+
+            waterElement.setAttribute('geometry', {
+                primitive: 'cylinder',
+                radius: 2.505,
+                height: scaledHeight,
+                segmentsRadial: 6
+            });
+
+            waterElement.setAttribute('position', `0 ${waterY} 0`);
+}
+
+
+
+
+
+        function createChart() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+
+            let labels = [];
+            let chartValues = [];
+
+            if (waterData.waterLevels && waterData.waterLevels.length > 0) {
+                labels = waterData.waterLevels.map(item => item.date);
+                chartValues = waterData.waterLevels.map(item => item.value);
+            }
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Niveau de la nappe (m)',
+                        data: chartValues,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    animation: {
+                        onComplete: () => {
+                            const chartImgDataUrl = canvas.toDataURL("image/png");
+                            const chartPlane = document.querySelector('#chartPlane');
+                            if (chartPlane) {
+                                chartPlane.setAttribute('material', 'src', chartImgDataUrl);
+                            } else {
+                                console.warn("chartPlane non trouvé dans la scène A-Frame.");
+                            }
+                        }
+                    },
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Évolution du niveau d'eau - ${waterData.stationInfo.commune}`
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Niveau: ${context.parsed.y.toFixed(2)} m`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Niveau (m)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            updatePanels();
+            setupWater();
+            createChart();
+        });
+    </script>
+</body>
+</html>
