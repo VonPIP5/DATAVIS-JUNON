@@ -27,7 +27,7 @@ let codeBssSelectioner = document.querySelector("#codeBssSelectioner")
 
 afficher.innerHTML = ""
 
-// ------------------------- Bouton pour la visualisation 3D en colonne/tube (Lucas) -------------------------
+// ------------------------- Bouton pour la visualisation 3D en colonne/tube -------------------------
 
 function ajouterBoutonVue3D() {
     let buttonVisu = document.getElementById('3dVisu');
@@ -120,7 +120,7 @@ boutonPeriodeSpecifique.addEventListener("click", () => {
     }
 });
 
-// ------------------------- Fin de bouton pour la visualisation 3D en colonne/tube (Lucas) -------------------------
+// ------------------------- Fin de bouton pour la visualisation 3D en colonne/tube -------------------------
 
 // ________________________       MAPS        _______________________________
 window.open3DView = function (codeBss) {

@@ -18,6 +18,15 @@ const departementStationsInformations = {
     stations: []
 };
 
+let currentHighlight = null;
+
+let searchInput = document.getElementById('searchInput');
+let searchButton = document.getElementById('search');
+let resetButton = document.getElementById('reset');
+
+let baseInfosPannel = document.getElementById('baseInfosPanel')
+let infoPanel = document.getElementById('infoPanel');
+
 /**
  * Inverser la date s'il le faut 
  */
@@ -66,13 +75,6 @@ if (!stationsData || !stationsData.stations) {
     fetchStationsData();
 }
 
-/**
- * Déclaration des variables pour les pannels
- */
-
-const baseInfosPannel = document.getElementById('baseInfosPanel')
-const infoPanel = document.getElementById('infoPanel');
-
 baseInfosPannel.innerHTML = `
     <h1> ${stationsData.departement} </h1>
     <h3><span class='bold'>Intervalle de temps:</span> ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)} </h3>
@@ -105,6 +107,10 @@ function getGrayColor(value, min, max) {
     const greyscale = ((value - min) / (max - min)) * 255;
     return Math.round(greyscale);
 }
+
+/**
+ * Créer le polygone support des données de mesure
+ */
 
 AFRAME.registerComponent('polygon', {
     schema: {
@@ -226,17 +232,20 @@ AFRAME.registerComponent('polygon', {
 
                     const info = data.infosStation;
 
+                    highlightSerieByCodeBSS(info.codeBSS);
+                    rotatePolygonToFaceStation(info.codeBSS);
+
                     infoPanel.innerHTML = `
                         <h2> ${info.commune} </h2>
                         <p><span class='bold'>Code BSS:</span> ${info.codeBSS} </p>
-                        <p><span class='bold'>Altitude:</span> ${info.altitude} </p>
-                        <p><span class='bold'>Profondeur:</span> ${info.profondeurNappe} </p>
+                        <p><span class='bold'>Altitude:</span> ${info.altitude} mètres</p>
+                        <p><span class='bold'>Profondeur:</span> ${info.profondeurNappe} mètres</p>
                         <hr/>
                         <h3 class='bold'>Mesures</h3>
                         <p><span class='bold'>Date de la mesure:</span> ${info.date_mesure} </p>
-                        <p><span class='bold'>Niveau de la nappe:</span> ${info.niveauNappe} </p>
-                        <p><span class='bold'>Niveau minimum sur l'intervalle:</span> ${info.niveauMin} </p>
-                        <p><span class='bold'>Niveau maximum sur l'intervalle:</span> ${info.niveauMax} </p>
+                        <p><span class='bold'>Niveau de la nappe:</span> ${info.niveauNappe} mètres</p>
+                        <p><span class='bold'>Niveau minimum sur l'intervalle:</span> ${info.niveauMin} mètres</p>
+                        <p><span class='bold'>Niveau maximum sur l'intervalle:</span> ${info.niveauMax} mètres</p>
                     `;
                 });
             }
@@ -280,13 +289,12 @@ AFRAME.registerComponent('polygon', {
             const labelEntity = document.createElement('a-entity');
             labelEntity.setAttribute("id", "codeBSSLabel");
             labelEntity.setAttribute('class', 'clickable');
-
             labelEntity.setAttribute('position', `${labelX} ${labelY} ${labelZ}`);
             labelEntity.setAttribute('rotation', `-90 ${angleDeg} -90`);
             labelEntity.setAttribute('text', {
                 font: "https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Maël/custom-font-a-Frame/custom-a-frame.fnt",
                 value: stationInformations.codeBSS || null,
-                color: '#FFF',
+                color: '#FFFFFF',
                 align: 'left',
                 width: 4,
                 baseline: 'bottom',
@@ -296,6 +304,7 @@ AFRAME.registerComponent('polygon', {
             labelEntity.addEventListener('click', () => {
                 console.log('Label BSS cliqué !');
                 highlightSerieByCodeBSS(stationInformations.codeBSS);
+                rotatePolygonToFaceStation(stationInformations.codeBSS);
             });
 
             this.el.appendChild(labelEntity);
@@ -340,7 +349,7 @@ AFRAME.registerComponent('polygon', {
                 rectangle.el.setObject3D('mesh', rectangle);
                 rectangle.el.setAttribute('click-listener', '');
 
-                const tabtest = {
+                const rectangleInformations = {
                     infosStation: {
                         commune: stationInformations?.commune || null,
                         codeBSS: stationInformations?.codeBSS || null,
@@ -352,8 +361,7 @@ AFRAME.registerComponent('polygon', {
                         niveauMax: max || null
                     }
                 }
-
-                rectangle.userData = tabtest;
+                rectangle.userData = rectangleInformations;
 
                 this.el.appendChild(rectangle.el);
                 this.el.object3D.add(rectangle);
@@ -366,10 +374,6 @@ AFRAME.registerComponent('polygon', {
  * Gestion du champ pour mettre en évidence le nom d'une station
  */
 
-searchInput = document.getElementById('searchInput');
-searchButton = document.getElementById('search');
-resetButton = document.getElementById('reset');
-
 function searchStation() {
     const searchTerm = searchInput.value;
 
@@ -379,19 +383,8 @@ function searchStation() {
 
         if (found) {
             const stationCode = found.codeBSS;
-
-            const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
-
-            allLabels.forEach(label => {
-                const textAttr = label.getAttribute('text');
-                const labelText = textAttr?.value;
-
-                label.setAttribute('text', {
-                    ...textAttr,
-                    color: labelText === stationCode ? '#FF0000' : '#FFFFFF'
-                });
-            });
             highlightSerieByCodeBSS(stationCode);
+            rotatePolygonToFaceStation(stationCode);
         }
     }
 }
@@ -411,22 +404,12 @@ resetButton.addEventListener('click', () => {
         currentHighlight.parent.remove(currentHighlight);
         currentHighlight = null;
     }
-
-    const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
-    allLabels.forEach(label => {
-        const textAttr = label.getAttribute('text');
-        label.setAttribute('text', {
-            ...textAttr,
-            color: '#FFFFFF'
-        });
-    });
+    resetLabelHighlight();
 });
 
 /**
  * Coloriser en rouge la série de mesures sélectionnée
  */
-
-let currentHighlight = null;
 
 function highlightSerieByCodeBSS(codeBSS) {
     const meshGroup = document.querySelector('[polygon]');
@@ -466,26 +449,25 @@ function highlightSerieByCodeBSS(codeBSS) {
 
         const totalHeight = nbMesures * heightPerMeasure;
 
+        // ✅ Highlight en contour rouge
         const highlightGeometry = new THREE.BoxGeometry(
             2 * radius * Math.sin(Math.PI / departementStationsInformations.stations.length),
             totalHeight,
             0.015
         );
 
-        const highlightMaterial = new THREE.MeshBasicMaterial({
+        const highlightEdges = new THREE.EdgesGeometry(highlightGeometry);
+        const highlightMaterial = new THREE.LineBasicMaterial({
             color: '#ff0000',
-            opacity: 0.15,
-            transparent: true,
-            depthWrite: false
+            linewidth: 2
         });
 
-        const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+        const outline = new THREE.LineSegments(highlightEdges, highlightMaterial);
+        outline.position.set(midX, totalHeight / 2, midZ);
+        outline.rotation.y = -Math.atan2(dirZ, dirX);
 
-        highlight.position.set(midX, totalHeight / 2, midZ);
-        highlight.rotation.y = -Math.atan2(dirZ, dirX);
-
-        meshGroup.object3D.add(highlight);
-        currentHighlight = highlight;
+        meshGroup.object3D.add(outline);
+        currentHighlight = outline;
 
         const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
 
@@ -499,4 +481,69 @@ function highlightSerieByCodeBSS(codeBSS) {
             });
         });
     });
+}
+
+
+function resetLabelHighlight() {
+    const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
+    allLabels.forEach(label => {
+        const textAttr = label.getAttribute('text');
+        label.setAttribute('text', {
+            ...textAttr,
+            color: '#FFFFFF'
+        });
+    });
+}
+
+function rotatePolygonToFaceStation(codeBSS) {
+    const polygon = document.querySelector('[polygon]');
+    const camera = document.querySelector('[camera]');
+    if (!polygon || !camera) return;
+
+    const stationIndex = departementStationsInformations.stations.findIndex(
+        station => station.codeBSS === codeBSS
+    );
+    if (stationIndex === -1) return;
+
+    const sides = departementStationsInformations.stations.length;
+    const angleStep = (2 * Math.PI) / sides;
+    const faceAngle = stationIndex * angleStep;
+
+    const cameraPos = new THREE.Vector3();
+    camera.object3D.getWorldPosition(cameraPos);
+    const polygonPos = new THREE.Vector3();
+    polygon.object3D.getWorldPosition(polygonPos);
+    const cameraDirection = new THREE.Vector3()
+        .subVectors(cameraPos, polygonPos)
+        .normalize();
+    const cameraAngle = Math.atan2(cameraDirection.z, cameraDirection.x);
+
+    const targetRotation = Math.PI - cameraAngle + faceAngle + Math.PI;
+
+    const startRotation = polygon.object3D.rotation.y;
+    const delta = ((targetRotation - startRotation + Math.PI) % (2 * Math.PI)) - Math.PI;
+    const duration = 1000;
+    let startTime = null;
+
+    function animate(time) {
+        if (!startTime) startTime = time;
+        const progress = Math.min((time - startTime) / duration, 1);
+        const easedProgress = easeInOutBack(progress);
+
+        polygon.object3D.rotation.y = startRotation + (delta * easedProgress);
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    }
+    function easeInOutBack(t) {
+        const c1 = 1.70158;
+        const c2 = c1 * 1.525;
+
+        return t < 0.5
+            ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
+            : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
+    }
+
+    requestAnimationFrame(animate);
 }
