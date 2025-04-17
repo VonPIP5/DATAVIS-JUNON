@@ -27,6 +27,9 @@ let resetButton = document.getElementById('reset');
 let baseInfosPannel = document.getElementById('baseInfosPanel')
 let infoPanel = document.getElementById('infoPanel');
 
+let color_begin = [216, 31, 7]; // Rouge
+let color_end = [0, 209, 233];   // Bleu
+
 /**
  * Inverser la date s'il le faut 
  */
@@ -44,6 +47,7 @@ if (!stationsData || !stationsData.stations) {
     console.error("Les données des stations sont invalides ou absentes.");
 } else {
     async function fetchStationsData() {
+        
         for (const station of stationsData.stations) {
             const url = `https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=${station.codeBss}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
 
@@ -107,6 +111,29 @@ function getGrayColor(value, min, max) {
     const greyscale = ((value - min) / (max - min)) * 255;
     return Math.round(greyscale);
 }
+
+/**
+ * Calculer la l'échelle de couleur pour les mesures
+ */
+
+function echelleCouleur(color_begin, color_end, min, max, value) {
+    console.log('test');
+    let [r1, g1, b1] = color_begin;
+    let [r2, g2, b2] = color_end;
+
+    console.log(value, min, max);
+
+    const t = (value - min) / (max - min);
+
+    const r =Math.floor(r1 * (1-t) + r2 * t);
+    const g =Math.floor(g1 * (1-t) + g2 * t);
+    const b =Math.floor(b1 * (1-t) + b2 * t);
+
+    console.log(r, g, b);
+
+    return [r, g, b];
+}
+
 
 /**
  * Créer le polygone support des données de mesure
@@ -202,7 +229,7 @@ AFRAME.registerComponent('polygon', {
                     if (mesh) {
                         const outlineGeometry = mesh.geometry.clone();
                         const outlineMaterial = new THREE.MeshBasicMaterial({
-                            color: '#ff0000',
+                            color: '#ffffff',
                             opacity: 0.3,
                             transparent: true,
                             depthWrite: false,
@@ -294,7 +321,7 @@ AFRAME.registerComponent('polygon', {
             labelEntity.setAttribute('text', {
                 font: "https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Maël/custom-font-a-Frame/custom-a-frame.fnt",
                 value: stationInformations.codeBSS || null,
-                color: '#FFFFFF',
+                color: '#c6d0d4',
                 align: 'left',
                 width: 4,
                 baseline: 'bottom',
@@ -311,12 +338,16 @@ AFRAME.registerComponent('polygon', {
 
             for (let j = 0; j < dataCount; j++) {
                 const value = dataValues[j].niveauNappe;
+                if (value === null || value === '' || isNaN(value)) continue;
+                
+                console.log('test appel', color_begin, color_end, min, max, value);
+
+                                //TODO
+                const [r, g, b] = echelleCouleur(color_begin, color_end, min, max, value);
+                const color = `rgb(${r}, ${g}, ${b})`;
 
                 // Déterminer l'opacité du rectangle de mesure si l'une des mesures en une chaine vide ou NULL
                 const opacity = !value ? 0 : 1;
-
-                const grayValue = getGrayColor(value, min, max);
-                const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
 
                 // Set les dimensions des rectangles de mesure
                 const height = 0.25;
@@ -408,7 +439,7 @@ resetButton.addEventListener('click', () => {
 });
 
 /**
- * Coloriser en rouge la série de mesures sélectionnée
+ * Coloriser en blanc la série de mesures sélectionnée
  */
 
 function highlightSerieByCodeBSS(codeBSS) {
@@ -449,7 +480,7 @@ function highlightSerieByCodeBSS(codeBSS) {
 
         const totalHeight = nbMesures * heightPerMeasure;
 
-        // ✅ Highlight en contour rouge
+        // Highlight en contour blanc
         const highlightGeometry = new THREE.BoxGeometry(
             2 * radius * Math.sin(Math.PI / departementStationsInformations.stations.length),
             totalHeight,
@@ -458,7 +489,7 @@ function highlightSerieByCodeBSS(codeBSS) {
 
         const highlightEdges = new THREE.EdgesGeometry(highlightGeometry);
         const highlightMaterial = new THREE.LineBasicMaterial({
-            color: '#ff0000',
+            color: '#FFFFFF',
             linewidth: 2
         });
 
@@ -477,7 +508,7 @@ function highlightSerieByCodeBSS(codeBSS) {
 
             label.setAttribute('text', {
                 ...textAttr,
-                color: labelText === codeBSS ? '#FF0000' : '#FFFFFF'
+                color: labelText === codeBSS ? '#FFFFFF' : '#c6d0d4'
             });
         });
     });
@@ -490,7 +521,7 @@ function resetLabelHighlight() {
         const textAttr = label.getAttribute('text');
         label.setAttribute('text', {
             ...textAttr,
-            color: '#FFFFFF'
+            color: '#c6d0d4'
         });
     });
 }
