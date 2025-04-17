@@ -84,7 +84,9 @@ function ajouterBoutonVue3D() {
                 stations: data.data.map(station => ({
                     commune: station.nom_commune,
                     codeBss: station.code_bss,
-                    altitude: station.altitude_station
+                    altitude: station.altitude_station,
+                    latitude: station.x,
+                    longitude: station.y
                 })),
                 departement: data.data[0].nom_departement,
                 departementCode: selectDepartement.value,
