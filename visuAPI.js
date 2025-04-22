@@ -31,60 +31,6 @@ let color_begin = [216, 31, 7]; // Rouge
 let color_end = [0, 209, 233];   // Bleu
 
 /**
- * Inverser la date s'il le faut 
- */
-
-function invertDate(date) {
-    const [year, month, day] = date.split('-');
-    return `${day}-${month}-${year}`;
-}
-
-/**
- * Récupération des données de niveaux de nappe de l'API 
- */
-
-if (!stationsData || !stationsData.stations) {
-    console.error("Les données des stations sont invalides ou absentes.");
-} else {
-    async function fetchStationsData() {
-        
-        for (const station of stationsData.stations) {
-            const url = `https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=${station.codeBss}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
-
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.data.length > 0) {
-                    departementStationsInformations.stations.push({
-                        commune: station.commune || null,
-                        codeBSS: station.codeBss || null,
-                        altitude: station.altitude || null,
-                        mesuresNappes: data.data.map(mesure => ({
-                            date: invertDate(mesure.date_mesure) || null,
-                            niveauNappe: mesure.niveau_nappe_eau || null,
-                            profondeurNappe: mesure.profondeur_nappe || null
-                        }))
-                    });
-                }
-
-            } catch (error) {
-                console.error(`Erreur lors de la récupération des données pour la station ${station.codeBss}:`, error);
-            }
-        }
-
-        document.dispatchEvent(new CustomEvent('stationsDataLoaded'));
-    }
-
-    fetchStationsData();
-}
-
-baseInfosPannel.innerHTML = `
-    <h1> ${stationsData.departement} </h1>
-    <h3><span class='bold'>Intervalle de temps:</span> ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)} </h3>
-  `;
-
-/**
  * Fonctions utiles pour la création du tube de données
  * getMaxdataCount : récupérer le nombre maximum de données pour chaque station
  * getMinMaxValues : récupérer les valeurs min et max de chaque série de données
@@ -104,36 +50,157 @@ function getMinMaxValues(data) {
 }
 
 /**
- * Calculer la couleur en greyscale pour les mesures
- */
-
-function getGrayColor(value, min, max) {
-    const greyscale = ((value - min) / (max - min)) * 255;
-    return Math.round(greyscale);
-}
-
-/**
  * Calculer la l'échelle de couleur pour les mesures
  */
 
 function echelleCouleur(color_begin, color_end, min, max, value) {
-    console.log('test');
     let [r1, g1, b1] = color_begin;
     let [r2, g2, b2] = color_end;
 
-    console.log(value, min, max);
-
     const t = (value - min) / (max - min);
 
-    const r =Math.floor(r1 * (1-t) + r2 * t);
-    const g =Math.floor(g1 * (1-t) + g2 * t);
-    const b =Math.floor(b1 * (1-t) + b2 * t);
-
-    console.log(r, g, b);
+    const r = Math.floor(r1 * (1 - t) + r2 * t);
+    const g = Math.floor(g1 * (1 - t) + g2 * t);
+    const b = Math.floor(b1 * (1 - t) + b2 * t);
 
     return [r, g, b];
 }
 
+/**
+ * Normaliser les dates pour l'affichage
+ */
+
+function getAllDates(stations) {
+    const dateSet = new Set();
+    stations.forEach(station => {
+        station.mesuresNappes.forEach(m => {
+            if (m.date) dateSet.add(m.date);
+        });
+    });
+    return Array.from(dateSet).sort((a, b) => {
+        const toSortable = d => d.split('-').reverse().join('-');
+        return toSortable(a) > toSortable(b) ? 1 : -1;
+    });
+}
+
+/**
+ * Inverser la date s'il le faut 
+ */
+
+function invertDate(date) {
+    const [year, month, day] = date.split('-');
+    return `${day}-${month}-${year}`;
+}
+
+/**
+ * Calcul de la distance euclidienne entre deux coordonnées de stations
+ */
+
+function euclideanDistance(lon1, lat1, lon2, lat2) {
+    const dx = lon1 - lon2;
+    const dy = lat1 - lat2;
+    return dx*dx + dy*dy;
+}
+
+/**
+ * Triage des stations à l'aide d'une matrice de distance 
+ */
+
+function sortStationsByProximity(stations) {
+    if (stations.length < 2) return stations;
+    
+    const distanceMatrix = stations.map(s1 => 
+        stations.map(s2 => 
+            s1 === s2 ? 0 : euclideanDistance(
+                s1.longitude, s1.latitude, 
+                s2.longitude, s2.latitude
+            )
+        )
+    );
+
+    const sorted = [stations[0]];
+    const remaining = new Set(stations.slice(1));
+    
+    while (sorted.length < stations.length) {
+        let closest = null;
+        let minDist = Infinity;
+        let insertPos = sorted.length;
+        
+        remaining.forEach(station => {
+            sorted.forEach((existing, idx) => {
+                const dist = distanceMatrix[stations.indexOf(existing)][stations.indexOf(station)];
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = station;
+                    insertPos = idx + 1;
+                }
+            });
+        });
+        
+        if (closest) {
+            sorted.splice(insertPos, 0, closest);
+            remaining.delete(closest);
+        }
+    }
+    
+    console.log("Matrice des distances:", distanceMatrix);
+    console.log("Distance la plus courte:", sorted.map(s => s.codeBSS).join(" -> "));
+    return sorted;
+}
+
+/**
+ * Récupération des données de niveaux de nappe de l'API 
+ */
+
+if (!stationsData || !stationsData.stations) {
+    console.error("Les données des stations sont invalides ou absentes.");
+} else {
+    async function fetchStationsData() {
+
+        for (const station of stationsData.stations) {
+            const url = `https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=${station.codeBss}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.data.length > 0) {
+                    departementStationsInformations.stations.push({
+                        commune: station.commune || null,
+                        codeBSS: station.codeBss || null,
+                        longitude: station.longitude || null,
+                        latitude: station.latitude || null,
+                        altitude: station.altitude || null,
+                        mesuresNappes: data.data.map(mesure => ({
+                            date: invertDate(mesure.date_mesure) || null,
+                            niveauNappe: mesure.niveau_nappe_eau || null,
+                            profondeurNappe: mesure.profondeur_nappe || null
+                        }))
+                    });
+                }
+
+            } catch (error) {
+                console.error(`Erreur lors de la récupération des données pour la station ${station.codeBss}:`, error);
+            }
+        }
+
+        departementStationsInformations.stations = sortStationsByProximity(
+            departementStationsInformations.stations.filter(s => 
+                s.longitude && s.latitude
+            )
+        );
+
+        console.log("Stations triées par proximité:", departementStationsInformations.stations);
+        document.dispatchEvent(new CustomEvent('stationsDataLoaded'));
+    }
+
+    fetchStationsData();
+}
+
+baseInfosPannel.innerHTML = `
+    <h1> ${stationsData.departement} </h1>
+    <h3><span class='bold'>Intervalle de temps:</span> ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)} </h3>
+  `;
 
 /**
  * Créer le polygone support des données de mesure
@@ -188,7 +255,9 @@ AFRAME.registerComponent('polygon', {
 
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         const material = new THREE.MeshStandardMaterial({
-            color: '#3b635c',
+            color: '#000000',
+            transparent: true,
+            opacity: 0,
 
             side: THREE.DoubleSide
         });
@@ -260,7 +329,7 @@ AFRAME.registerComponent('polygon', {
                     const info = data.infosStation;
 
                     highlightSerieByCodeBSS(info.codeBSS);
-                    rotatePolygonToFaceStation(info.codeBSS);
+                    rotatePolygonToFaceCamera(info.codeBSS);
 
                     infoPanel.innerHTML = `
                         <h2> ${info.commune} </h2>
@@ -278,14 +347,17 @@ AFRAME.registerComponent('polygon', {
             }
         });
 
+        const allDates = getAllDates(departementStationsInformations.stations);
+
         for (let i = 0; i < sides; i++) {
             const stationInformations = departementStationsInformations.stations[i];
             const serie = stationInformations?.mesuresNappes;
             if (!serie) continue;
 
-            const dataValues = Object.values(serie);
+            const serieMap = new Map(serie.map(m => [m.date, m]));
+            const alignedSerie = allDates.map(date => serieMap.get(date) || null);
+            const dataCount = alignedSerie.length;
 
-            const dataCount = dataValues.length;
             const { min, max } = seriesMinMax[i];
 
             const angle = i * angleStep;
@@ -331,50 +403,42 @@ AFRAME.registerComponent('polygon', {
             labelEntity.addEventListener('click', () => {
                 console.log('Label BSS cliqué !');
                 highlightSerieByCodeBSS(stationInformations.codeBSS);
-                rotatePolygonToFaceStation(stationInformations.codeBSS);
+                rotatePolygonToFaceCamera(stationInformations.codeBSS);
             });
 
             this.el.appendChild(labelEntity);
 
             for (let j = 0; j < dataCount; j++) {
-                const value = dataValues[j].niveauNappe;
-                if (value === null || value === '' || isNaN(value)) continue;
-                
-                console.log('test appel', color_begin, color_end, min, max, value);
+                const dataPoint = alignedSerie[j];
 
-                                //TODO
-                const [r, g, b] = echelleCouleur(color_begin, color_end, min, max, value);
-                const color = `rgb(${r}, ${g}, ${b})`;
-
-                // Déterminer l'opacité du rectangle de mesure si l'une des mesures en une chaine vide ou NULL
-                const opacity = !value ? 0 : 1;
-
-                // Set les dimensions des rectangles de mesure
                 const height = 0.25;
                 const width = sideLength;
                 const depth = 0.01;
+                const posY = j * height + height / 2;
+
+                if (!dataPoint || dataPoint.niveauNappe === null || isNaN(dataPoint.niveauNappe)) {
+                    continue; // on saute les mesures manquantes, donc espace vide
+                }
+
+                const value = dataPoint.niveauNappe;
+                const [r, g, b] = echelleCouleur(color_begin, color_end, min, max, value);
+                const color = `rgb(${r}, ${g}, ${b})`;
 
                 const rectangleGeometry = new THREE.BoxGeometry(width, height, depth);
                 const rectangleMaterial = new THREE.MeshStandardMaterial({
                     color: color,
                     transparent: true,
-                    opacity: opacity
-
+                    opacity: 1
                 });
+
                 const rectangle = new THREE.Mesh(rectangleGeometry, rectangleMaterial);
 
-                // Placement des rectangles de mesure contre les côtés du polygone
                 const progress = 0.5;
                 const posX = startX + dirX * progress;
                 const posZ = startZ + dirZ * progress;
 
-                // Gestion de la hauteur verticale (en fonction de la hauteur d'une mesure de la série sur le polygone pour qu'il soit au bon niveau)
-                const posY = j * height + height / 2;
-
                 rectangle.position.set(posX, posY, posZ);
-
-                const sideAngle = Math.atan2(dirZ, dirX);
-                rectangle.rotation.y = -sideAngle;
+                rectangle.rotation.y = -Math.atan2(dirZ, dirX);
 
                 rectangle.el = document.createElement('a-entity');
                 rectangle.el.setObject3D('mesh', rectangle);
@@ -385,13 +449,13 @@ AFRAME.registerComponent('polygon', {
                         commune: stationInformations?.commune || null,
                         codeBSS: stationInformations?.codeBSS || null,
                         altitude: stationInformations?.altitude || null,
-                        profondeurNappe: dataValues[j]?.profondeurNappe || null,
-                        date_mesure: dataValues[j]?.date || null,
-                        niveauNappe: dataValues[j]?.niveauNappe || null,
+                        profondeurNappe: dataPoint?.profondeurNappe || null,
+                        date_mesure: dataPoint?.date || null,
+                        niveauNappe: value || null,
                         niveauMin: min || null,
                         niveauMax: max || null
                     }
-                }
+                };
                 rectangle.userData = rectangleInformations;
 
                 this.el.appendChild(rectangle.el);
@@ -415,7 +479,7 @@ function searchStation() {
         if (found) {
             const stationCode = found.codeBSS;
             highlightSerieByCodeBSS(stationCode);
-            rotatePolygonToFaceStation(stationCode);
+            rotatePolygonToFaceCamera(stationCode);
         }
     }
 }
@@ -478,7 +542,8 @@ function highlightSerieByCodeBSS(codeBSS) {
         const midX = startX + dirX * 0.5;
         const midZ = startZ + dirZ * 0.5;
 
-        const totalHeight = nbMesures * heightPerMeasure;
+        const allDates = getAllDates(departementStationsInformations.stations);
+        const totalHeight = allDates.length * 0.25;
 
         // Highlight en contour blanc
         const highlightGeometry = new THREE.BoxGeometry(
@@ -494,6 +559,7 @@ function highlightSerieByCodeBSS(codeBSS) {
         });
 
         const outline = new THREE.LineSegments(highlightEdges, highlightMaterial);
+
         outline.position.set(midX, totalHeight / 2, midZ);
         outline.rotation.y = -Math.atan2(dirZ, dirX);
 
@@ -526,7 +592,7 @@ function resetLabelHighlight() {
     });
 }
 
-function rotatePolygonToFaceStation(codeBSS) {
+function rotatePolygonToFaceCamera(codeBSS) {
     const polygon = document.querySelector('[polygon]');
     const camera = document.querySelector('[camera]');
     if (!polygon || !camera) return;
@@ -538,7 +604,8 @@ function rotatePolygonToFaceStation(codeBSS) {
 
     const sides = departementStationsInformations.stations.length;
     const angleStep = (2 * Math.PI) / sides;
-    const faceAngle = stationIndex * angleStep;
+    const faceStep = 0.1;
+    const faceAngle = (stationIndex * angleStep) + faceStep;
 
     const cameraPos = new THREE.Vector3();
     camera.object3D.getWorldPosition(cameraPos);
