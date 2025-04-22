@@ -131,17 +131,17 @@
 
         <!-- Panneau d'information principal -->
         <a-entity id="infoPanel" position="-4.5 2.5 -2.5" rotation="0 60 0">
-            <a-plane width="3" height="3.3" color="#333" opacity="0.8">
+            <a-plane width="3.35" height="3.8" color="#333" opacity="0.8">
                 <a-text id="infoText" value="Chargement..." 
                         width="2.7" align="left" wrap-count="25"
-                        position="-1.1 0 0" color="white"
+                        position="-1.3 0 0" color="white"
                         font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
         <!-- Panneau meteo -->
         <a-entity id="meteoPanel" position="4.5 2.5 2.5" rotation="0 -120 0">
-            <a-plane width="2.6" height="3" color="#333" opacity="0.8">
+            <a-plane width="2.4" height="3.5" color="#333" opacity="0.8">
                 <a-text id="meteoText" value="Chargement meteo..." 
                         width="2.7" align="left" wrap-count="25"
                         position="-1 0 0" color="white"
@@ -151,7 +151,7 @@
 
         <!-- Panneau statistiques -->
         <a-entity id="statsPanel" position="0 2.5 5.1" rotation="0 180 0">
-            <a-plane width="2.5" height="3" color="#333" opacity="0.8">
+            <a-plane width="2.5" height="3.3" color="#333" opacity="0.8">
                 <a-text id="statsText" value="Chargement stats..." 
                         width="2.7" align="left" wrap-count="30"
                         position="-1 0 0" color="white"
@@ -169,7 +169,6 @@
                         position="0 -0.1 0.11" color="white"
                         font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-box>
-            
         </a-entity>
 
         <!-- Camera -->
@@ -190,56 +189,115 @@
 
         <!-- Ciel -->
         <a-sky color="#ECECEC"></a-sky>
-
     </a-scene>
+
     <script>
-        // Recuperation des donnees depuis le sessionStorage
-        const waterData = JSON.parse(sessionStorage.getItem('waterData')) || {
-            waterLevels: [
-                {value: 107.34, date: "01/01/2023"},
-                {value: 107.37, date: "02/01/2023"},
-                {value: 107.39, date: "03/01/2023"},
-                {value: 107.41, date: "04/01/2023"},
-                {value: 107.45, date: "05/01/2023"},
-                {value: 107.48, date: "06/01/2023"}
-            ],
-            lastMeasurement: {
-                value: 107.48,
-                profondeur: 12.6
-            },
-            stationInfo: { 
-                codeBss: "03627X0052/P1", 
-                commune: "Gémigny", 
-                departement: "Loiret", 
-                altitude: "117.6", 
-                coordinates: { lat: 47.5, lng: 1.5 },
-                dateDebut: "01/01/2023",
-                dateFin: "06/01/2023"
-            },
-            meteoData: {
-                temperature: [10, 11, 12, 13, 14, 15],
-                humidity: [80, 78, 75, 72, 70, 68],
-                dates: ["01/01/2023", "02/01/2023", "03/01/2023", "04/01/2023", "05/01/2023", "06/01/2023"]
-            },
-            statistics: {
-                current: {
-                    median: 107.40,
-                    q1: 107.36,
-                    q3: 107.44
-                },
-                historical: {
-                    median: 107.38,
-                    q1: 107.32,
-                    q3: 107.46
-                }
-            }
+        // Récupération des données depuis le sessionStorage
+        const stationData = JSON.parse(sessionStorage.getItem('waterData'));
+        const apiBaseUrl = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes";
+        
+        // Objet pour stocker toutes les données
+        const waterData = {
+            stationInfo: stationData.stationInfo,
+            waterLevels: [],
+            lastMeasurement: null,
+            meteoData: null,
+            statistics: null
         };
-    
+
+        // Fonction pour convertir le format de date DD-MM-YYYY en YYYY-MM-DD
+        function convertToAPIDateFormat(dateStr) {
+            const [day, month, year] = dateStr.split('-');
+            return `${year}-${month}-${day}`;
+        }
+
         // Fonction pour formater le texte avec saut de ligne
         function formatText(content) {
             return content.replace(/<br>/g, '\n');
         }
-    
+
+        // Fonction pour récupérer les données de niveau d'eau
+        async function fetchWaterLevels() {
+            try {
+                const dateDebutAPI = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
+                const dateFinAPI = convertToAPIDateFormat(waterData.stationInfo.dateFin);
+                
+                const response = await fetch(
+                    `${apiBaseUrl}/chroniques?code_bss=${waterData.stationInfo.codeBss}&date_debut_mesure=${dateDebutAPI}&date_fin_mesure=${dateFinAPI}`
+                );
+                const data = await response.json();
+                
+                if (data.data && data.data.length > 0) {
+                    waterData.waterLevels = data.data.map(item => ({
+                        value: item.niveau_nappe_eau,
+                        date: new Date(item.date_mesure).toLocaleDateString(),
+                        profondeur: item.profondeur_nappe
+                    }));
+                    
+                    waterData.lastMeasurement = waterData.waterLevels[waterData.waterLevels.length - 1];
+                    
+                    // Calcul des statistiques
+                    calculateStatistics();
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération des niveaux d'eau:", error);
+            }
+        }
+
+        // Fonction pour récupérer les données météo
+        async function fetchMeteoData() {
+            try {
+                const { lat, lng } = waterData.stationInfo.coordinates;
+                const dateDebutAPI = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
+                const dateFinAPI = convertToAPIDateFormat(waterData.stationInfo.dateFin);
+                
+                const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${dateDebutAPI}&end_date=${dateFinAPI}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.daily) {
+                    waterData.meteoData = {
+                        tempMax: data.daily.temperature_2m_max,
+                        tempMin: data.daily.temperature_2m_min,
+                        precipitation: data.daily.precipitation_sum,
+                        weatherCode: data.daily.weather_code,
+                        dates: data.daily.time.map(date => new Date(date).toLocaleDateString()
+                    )};
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération des données météo:", error);
+            }
+        }
+
+        // Fonction pour calculer les statistiques
+        function calculateStatistics() {
+            const values = waterData.waterLevels.map(item => item.value).sort((a, b) => a - b);
+            const n = values.length;
+            
+            if (n > 0) {
+                waterData.statistics = {
+                    current: {
+                        median: calculatePercentile(values, 50),
+                        q1: calculatePercentile(values, 25),
+                        q3: calculatePercentile(values, 75),
+                        min: values[0],
+                        max: values[values.length - 1]
+                    }
+                };
+            }
+        }
+
+        function calculatePercentile(values, percentile) {
+            const index = (percentile / 100) * (values.length - 1);
+            if (Math.floor(index) === index) {
+                return values[index];
+            }
+            const i = Math.floor(index);
+            const fraction = index - i;
+            return values[i] + (values[i + 1] - values[i]) * fraction;
+        }
+
         // Mise à jour des panneaux 3D
         function updatePanels() {
             // Panneau principal
@@ -248,56 +306,59 @@
                 Département: ${waterData.stationInfo.departement}<br>
                 Code BSS: ${waterData.stationInfo.codeBss}<br>
                 Altitude: ${waterData.stationInfo.altitude} m<br>
-                Profondeur: ${waterData.lastMeasurement.profondeur} m<br>
+                Profondeur Investigation: ${waterData.stationInfo.profondeurInv} m<br>
+                ${waterData.lastMeasurement ? `Profondeur actuelle: ${waterData.lastMeasurement.profondeur.toFixed(2)} m<br>` : ''}
                 Période: ${waterData.stationInfo.dateDebut} au ${waterData.stationInfo.dateFin}
             `;
             document.querySelector('#infoText').setAttribute('value', formatText(infoContent));
-    
+
             // Panneau meteo
             if (waterData.meteoData) {
-                const avgTemp = (waterData.meteoData.temperature.reduce((a, b) => a + b, 0) / waterData.meteoData.temperature.length).toFixed(1);
-                const avgHumidity = (waterData.meteoData.humidity.reduce((a, b) => a + b, 0) / waterData.meteoData.humidity.length).toFixed(1);
+                const avgTempMax = (waterData.meteoData.tempMax.reduce((a, b) => a + b, 0) / waterData.meteoData.tempMax.length).toFixed(1);
+                const avgTempMin = (waterData.meteoData.tempMin.reduce((a, b) => a + b, 0) / waterData.meteoData.tempMin.length).toFixed(1);
+                const totalPrecip = waterData.meteoData.precipitation.reduce((a, b) => a + b, 0).toFixed(1);
                 
                 const meteoContent = `
                     Données météo<br>
-                    (Moyenne)<br>
-                    Température: ${avgTemp}°C<br>
-                    Humidite: ${avgHumidity}%<br>
+                    (Moyenne sur la période)<br>
+                    Temp. max: ${avgTempMax}°C<br>
+                    Temp. min: ${avgTempMin}°C<br>
+                    Précipitations: ${totalPrecip} mm<br>
                     Période: ${waterData.meteoData.dates[0]}<br>
                     à ${waterData.meteoData.dates[waterData.meteoData.dates.length-1]}
                 `;
                 document.querySelector('#meteoText').setAttribute('value', formatText(meteoContent));
             }
-    
+
             // Panneau stats
             if (waterData.statistics) {
                 const statsContent = `
-                    Statistiques<br>
-                    Médiane actuelle: ${waterData.statistics.current.median.toFixed(2)}<br>
-                    Q1 actuel: ${waterData.statistics.current.q1.toFixed(2)}<br>
-                    Q3 actuel: ${waterData.statistics.current.q3.toFixed(2)}<br>
-                    Médiane historique: ${waterData.statistics.historical.median.toFixed(2)}<br>
-                    Q1 historique: ${waterData.statistics.historical.q1.toFixed(2)}<br>
-                    Q3 historique: ${waterData.statistics.historical.q3.toFixed(2)}
+                    Statistiques du niveau d'eau<br>
+                    Période: ${waterData.stationInfo.dateDebut}<br>
+                    au ${waterData.stationInfo.dateFin}<br>
+                    Médiane: ${waterData.statistics.current.median.toFixed(2)} m<br>
+                    Quartile 1: ${waterData.statistics.current.q1.toFixed(2)} m<br>
+                    Quartile 3: ${waterData.statistics.current.q3.toFixed(2)} m<br>
+                    Minimum: ${waterData.statistics.current.min.toFixed(2)} m<br>
+                    Maximum: ${waterData.statistics.current.max.toFixed(2)} m
                 `;
                 document.querySelector('#statsText').setAttribute('value', formatText(statsContent));
             }
         }
-    
+
         function setupWater() {
             const waterElement = document.querySelector('#water');
-            const lastValue = waterData.lastMeasurement.value;
-            const profondeur = waterData.lastMeasurement.profondeur;
-            const altitude = parseFloat(waterData.stationInfo.altitude);
+            if (!waterData.lastMeasurement) return;
+
             const values = waterData.waterLevels.map(item => item.value);
-            const minValue = Math.min(...values);
-            const maxValue = Math.max(...values);
+            const minValue = waterData.statistics.current.min;
+            const maxValue = waterData.statistics.current.max;
+            
             const waterLevelContent = `Niveau: ${waterData.lastMeasurement.value.toFixed(2)} m\n(Min: ${minValue.toFixed(2)} m / Max: ${maxValue.toFixed(2)} m)`;
             document.querySelector('#waterLevelText').setAttribute('value', waterLevelContent);
 
             const maxDepthVisual = 3;
-            const scaledHeight = (profondeur / altitude) * maxDepthVisual;
-
+            const scaledHeight = (waterData.lastMeasurement.profondeur / waterData.stationInfo.altitude) * maxDepthVisual;
             const waterY = (1.5 + 0.01) - scaledHeight / 2;
 
             waterElement.setAttribute('geometry', {
@@ -308,25 +369,16 @@
             });
 
             waterElement.setAttribute('position', `0 ${waterY} 0`);
-}
+        }
 
-
-
-
-
-        function createChart() {
+        async function createChart() {
             const canvas = document.createElement('canvas');
             canvas.width = 800;
             canvas.height = 600;
             const ctx = canvas.getContext('2d');
 
-            let labels = [];
-            let chartValues = [];
-
-            if (waterData.waterLevels && waterData.waterLevels.length > 0) {
-                labels = waterData.waterLevels.map(item => item.date);
-                chartValues = waterData.waterLevels.map(item => item.value);
-            }
+            const labels = waterData.waterLevels.map(item => item.date);
+            const chartValues = waterData.waterLevels.map(item => item.value);
 
             const chart = new Chart(ctx, {
                 type: 'line',
@@ -347,11 +399,7 @@
                         onComplete: () => {
                             const chartImgDataUrl = canvas.toDataURL("image/png");
                             const chartPlane = document.querySelector('#chartPlane');
-                            if (chartPlane) {
-                                chartPlane.setAttribute('material', 'src', chartImgDataUrl);
-                            } else {
-                                console.warn("chartPlane non trouvé dans la scène A-Frame.");
-                            }
+                            chartPlane.setAttribute('material', 'src', chartImgDataUrl);
                         }
                     },
                     responsive: false,
@@ -359,7 +407,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `Évolution du niveau d'eau - ${waterData.stationInfo.commune}`
+                            text: `Évolution du niveau d'eau - ${waterData.stationInfo.commune} (${waterData.stationInfo.dateDebut} au ${waterData.stationInfo.dateFin})`
                         },
                         tooltip: {
                             callbacks: {
@@ -388,10 +436,20 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            updatePanels();
-            setupWater();
-            createChart();
+        // Chargement initial
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                await Promise.all([
+                    fetchWaterLevels(),
+                    fetchMeteoData()
+                ]);
+                
+                updatePanels();
+                setupWater();
+                createChart();
+            } catch (error) {
+                console.error("Erreur lors du chargement des données:", error);
+            }
         });
     </script>
 </body>
