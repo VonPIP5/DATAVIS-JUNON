@@ -1,64 +1,37 @@
 /**
- * Style des pannels d'information
+ * Style des pannels
  */
-
- .base-infos-panel {
+ .base-infos-panel, 
+ .search-panel, 
+ .info-panel, 
+ .map-panel {
     position: fixed;
-    top: 20px;
-    left: 20px;
-    background: rgba(255, 255, 255, 0.95);
     padding: 15px;
     border-radius: 8px;
     z-index: 1000;
-    max-width: 500px;
+    background: rgba(255, 255, 255, 0.95);
     font-family: Arial, sans-serif;
+ }
+
+ .base-infos-panel {
+    
+    top: 20px;
+    left: 20px;
+    max-width: 500px;
+    
 }
 
 .search-panel {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 15px;
-    border-radius: 8px;
-    z-index: 1000;
     max-width: 300px;
-    font-family: Arial, sans-serif;
-}
-
-.info-panel {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 15px;
-    border-radius: 8px;
-    z-index: 1000;
-    max-width: 500px;
-    font-family: Arial, sans-serif;
-}
-
-.map-panel {
-    position: fixed;
-    bottom: 60px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 15px;
-    border-radius: 8px;
-    z-index: 1000;
-    max-width: 300px;
-    font-family: Arial, sans-serif;
 }
 
 .searchInput {
     width: 80%;
     padding: 5px;
     margin-bottom: 5px;
-}
-
-.bold {
-    font-weight: bolder;
 }
 
 .search,
@@ -69,4 +42,23 @@
     border: none;
     border-radius: 3px;
     cursor: pointer
+}
+
+.info-panel {
+    display: none;
+    bottom: 20px;
+    left: 20px;
+    max-width: 500px;
+
+}
+
+.map-panel {
+    display: none;
+    bottom: 60px;
+    right: 20px;
+    max-width: 300px;
+}
+
+.bold {
+    font-weight: bolder;
 }

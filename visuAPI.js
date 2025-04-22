@@ -1,7 +1,8 @@
 /** Ressources des API Hub'eau
- * API stations
+ * API données des stations sur la durée du 10/03/2025 au 20/03/2025 (période de test)
+ * Données des stations
  * https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations?code_departement=&41&date_debut_mesure=2025-03-10&date_fin_mesure=2025-03-20
- * API données stations sur la durée
+ * Données des mesures des stations
  * https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=03627X0052/P1&date_debut_mesure=2025-03-10&date_fin_mesure=2025-03-20
  */
 
@@ -57,6 +58,9 @@ function echelleCouleur(color_begin, color_end, min, max, value) {
     let [r1, g1, b1] = color_begin;
     let [r2, g2, b2] = color_end;
 
+    // Si une seule valeur se trouve dans la série de données, on renvoie la couleur égale à la valeur la plus haute
+    if (min === max) return[r2, g2, b2];
+
     const t = (value - min) / (max - min);
 
     const r = Math.floor(r1 * (1 - t) + r2 * t);
@@ -103,12 +107,10 @@ function euclideanDistance(lon1, lat1, lon2, lat2) {
 }
 
 /**
- * Triage des stations à l'aide d'une matrice de distance 
+ * Création de la matrice de distance ici (appel via la fonction sortStationsByProximity) 
  */
 
-function sortStationsByProximity(stations) {
-    if (stations.length < 2) return stations;
-    
+function createDistanceMatrix(stations) {
     const distanceMatrix = stations.map(s1 => 
         stations.map(s2 => 
             s1 === s2 ? 0 : euclideanDistance(
@@ -117,6 +119,20 @@ function sortStationsByProximity(stations) {
             )
         )
     );
+
+    console.log("Matrice des distances:", distanceMatrix);
+
+    return distanceMatrix;
+}
+
+/**
+ * Triage des stations à l'aide d'une matrice de distance 
+ */
+
+function sortStationsByProximity(stations) {
+    if (stations.length < 2) return stations;
+    
+    const distanceMatrix = createDistanceMatrix(stations);
 
     const sorted = [stations[0]];
     const remaining = new Set(stations.slice(1));
@@ -142,8 +158,7 @@ function sortStationsByProximity(stations) {
             remaining.delete(closest);
         }
     }
-    
-    console.log("Matrice des distances:", distanceMatrix);
+
     console.log("Distance la plus courte:", sorted.map(s => s.codeBSS).join(" -> "));
     return sorted;
 }
@@ -216,11 +231,11 @@ AFRAME.registerComponent('polygon', {
     init: function () {
         document.addEventListener('stationsDataLoaded', () => {
             const sides = departementStationsInformations.stations.length;
-            this.updateGeometry(sides);
+            this.updatePolygon(sides);
         });
     },
 
-    updateGeometry: function (sides) {
+    updatePolygon: function (sides) {
         const maxDataCount = getMaxDataCount(departementStationsInformations.stations);
         const seriesMinMax = getMinMaxValues(
             departementStationsInformations.stations.map(station => station.mesuresNappes.map(mesure => mesure.niveauNappe))
@@ -580,7 +595,6 @@ function highlightSerieByCodeBSS(codeBSS) {
     });
 }
 
-
 function resetLabelHighlight() {
     const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
     allLabels.forEach(label => {
@@ -605,6 +619,7 @@ function rotatePolygonToFaceCamera(codeBSS) {
     const sides = departementStationsInformations.stations.length;
     const angleStep = (2 * Math.PI) / sides;
     const faceStep = 0.1;
+
     const faceAngle = (stationIndex * angleStep) + faceStep;
 
     const cameraPos = new THREE.Vector3();
