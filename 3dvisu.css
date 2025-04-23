@@ -53,12 +53,28 @@
 }
 
 .map-panel {
-    display: none;
     bottom: 60px;
     right: 20px;
-    max-width: 300px;
 }
 
 .bold {
     font-weight: bolder;
+}
+
+.leaflet-control.legend {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    color: #333;
+    max-width: 150px;
+}
+
+.leaflet-control.legend img.imgLegendeMap {
+    width: 12px;
+    height: 20px;
+    vertical-align: middle;
+    margin-right: 6px;
 }

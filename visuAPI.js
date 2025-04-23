@@ -29,7 +29,13 @@ let baseInfosPannel = document.getElementById('baseInfosPanel')
 let infoPanel = document.getElementById('infoPanel');
 
 let color_begin = [216, 31, 7]; // Rouge
-let color_end = [0, 209, 233];   // Bleu
+let color_end = [0, 209, 233];  // Bleu
+
+let latitude;
+let longitude;
+
+const leafletMarkersByCodeBSS = {};
+let lastClickedLeafletMarker = null;
 
 /**
  * Fonctions utiles pour la création du tube de données
@@ -59,7 +65,7 @@ function echelleCouleur(color_begin, color_end, min, max, value) {
     let [r2, g2, b2] = color_end;
 
     // Si une seule valeur se trouve dans la série de données, on renvoie la couleur égale à la valeur la plus haute
-    if (min === max) return[r2, g2, b2];
+    if (min === max) return [r2, g2, b2];
 
     const t = (value - min) / (max - min);
 
@@ -103,7 +109,7 @@ function invertDate(date) {
 function euclideanDistance(lon1, lat1, lon2, lat2) {
     const dx = lon1 - lon2;
     const dy = lat1 - lat2;
-    return dx*dx + dy*dy;
+    return dx * dx + dy * dy;
 }
 
 /**
@@ -111,17 +117,15 @@ function euclideanDistance(lon1, lat1, lon2, lat2) {
  */
 
 function createDistanceMatrix(stations) {
-    const distanceMatrix = stations.map(s1 => 
-        stations.map(s2 => 
+    const distanceMatrix = stations.map(s1 =>
+        stations.map(s2 =>
             s1 === s2 ? 0 : euclideanDistance(
-                s1.longitude, s1.latitude, 
+                s1.longitude, s1.latitude,
                 s2.longitude, s2.latitude
             )
         )
     );
-
     console.log("Matrice des distances:", distanceMatrix);
-
     return distanceMatrix;
 }
 
@@ -131,17 +135,17 @@ function createDistanceMatrix(stations) {
 
 function sortStationsByProximity(stations) {
     if (stations.length < 2) return stations;
-    
+
     const distanceMatrix = createDistanceMatrix(stations);
 
     const sorted = [stations[0]];
     const remaining = new Set(stations.slice(1));
-    
+
     while (sorted.length < stations.length) {
         let closest = null;
         let minDist = Infinity;
         let insertPos = sorted.length;
-        
+
         remaining.forEach(station => {
             sorted.forEach((existing, idx) => {
                 const dist = distanceMatrix[stations.indexOf(existing)][stations.indexOf(station)];
@@ -152,7 +156,7 @@ function sortStationsByProximity(stations) {
                 }
             });
         });
-        
+
         if (closest) {
             sorted.splice(insertPos, 0, closest);
             remaining.delete(closest);
@@ -200,7 +204,7 @@ if (!stationsData || !stationsData.stations) {
         }
 
         departementStationsInformations.stations = sortStationsByProximity(
-            departementStationsInformations.stations.filter(s => 
+            departementStationsInformations.stations.filter(s =>
                 s.longitude && s.latitude
             )
         );
@@ -230,8 +234,12 @@ AFRAME.registerComponent('polygon', {
     // Set le nombre de côtés en fonction du nombre de séries de données
     init: function () {
         document.addEventListener('stationsDataLoaded', () => {
-            const sides = departementStationsInformations.stations.length;
+            const stations = departementStationsInformations.stations;
+            const sides = stations.length;
             this.updatePolygon(sides);
+
+            const { coords, avgLat, avgLon } = getCoordsAndAvg(stations);
+            generateMap(coords, avgLat, avgLon);
         });
     },
 
@@ -581,6 +589,17 @@ function highlightSerieByCodeBSS(codeBSS) {
         meshGroup.object3D.add(outline);
         currentHighlight = outline;
 
+        if (lastClickedLeafletMarker) {
+            const previous = leafletMarkersByCodeBSS[lastClickedLeafletMarker];
+            if (previous) previous.marker.setIcon(previous.defaultIcon);
+        }
+
+        if (leafletMarkersByCodeBSS[codeBSS]) {
+            const { marker, redIcon } = leafletMarkersByCodeBSS[codeBSS];
+            marker.setIcon(redIcon);
+            lastClickedLeafletMarker = codeBSS;
+        }
+
         const allLabels = document.querySelectorAll('[id="codeBSSLabel"]');
 
         allLabels.forEach(label => {
@@ -659,4 +678,108 @@ function rotatePolygonToFaceCamera(codeBSS) {
     }
 
     requestAnimationFrame(animate);
+}
+
+/**
+ * Récupération des coordonnées des stations du département pour en calculer l'average et les retourner pour permettre la création de la carte centrée
+ */
+
+function getCoordsAndAvg(stations) {
+    const coords = stations
+        .filter(s => s.latitude && s.longitude)
+        .map(s => ({
+            lat: parseFloat(s.latitude),
+            lon: parseFloat(s.longitude),
+            station: s
+        }));
+
+    if (coords.length === 0) return { coords: [], avgLat: 0, avgLon: 0 };
+
+    const avgLat = coords.reduce((sum, c) => sum + c.lat, 0) / coords.length;
+    const avgLon = coords.reduce((sum, c) => sum + c.lon, 0) / coords.length;
+
+    return { coords, avgLat, avgLon };
+}
+
+/**
+ * Création d'une map avec Leaflet pour afficher les stations sur une carte
+ */
+
+function generateMap(coords, avgLat, avgLon) {
+    const mapPanel = document.getElementById('mapPanel');
+    mapPanel.innerHTML = "<div id='map' style='width: 500px; height: 500px;'></div>";
+
+    const map = L.map('map').setView([avgLon, avgLat], 9);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>'
+    }).addTo(map);
+
+    let lastClickedMarker = null;
+
+    coords.forEach(({ lat, lon, station }) => {
+        let iconUrl = 'leaflet/images/marker-icon-2x.png';
+
+        if (station.mesuresNappes && station.mesuresNappes.length > 0) {
+            iconUrl = 'leaflet/images/marker-icon-violet.png';
+        }
+
+        const defaultIcon = L.icon({
+            iconUrl,
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'leaflet/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+
+        const redIcon = L.icon({
+            iconUrl: 'leaflet/images/marker-icon-rouge.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'leaflet/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+
+        const marker = L.marker([lon, lat], { icon: defaultIcon }).addTo(map);
+
+        leafletMarkersByCodeBSS[station.codeBSS] = {
+            marker,
+            defaultIcon,
+            redIcon
+        };
+
+        marker.bindPopup(`
+            <b>${station.commune || 'Commune inconnue'}</b><br/>
+            ${station.codeBSS}<br/>
+            Altitude : ${station.altitude || 'N/A'} m
+        `);
+
+        marker.on('click', () => {
+            if (lastClickedMarker) {
+                lastClickedMarker.setIcon(lastClickedMarker.originalIcon);
+            }
+
+            marker.setIcon(redIcon);
+            marker.originalIcon = defaultIcon;
+            lastClickedMarker = marker;
+
+            rotatePolygonToFaceCamera(station.codeBSS);
+            highlightSerieByCodeBSS(station.codeBSS);
+        });
+    });
+
+    const legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML += '<img class="imgLegendeMap" src="leaflet/images/marker-icon-rouge.png"> <span>Station CLIQUÉE</span><br>';
+        div.innerHTML += '<img class="imgLegendeMap" src="leaflet/images/marker-icon-2x.png"> <span>Station SANS infos</span><br>';
+        div.innerHTML += '<img class="imgLegendeMap" src="leaflet/images/marker-icon-violet.png"> <span>Station AVEC infos</span><br>';
+        return div;
+    };
+
+    legend.addTo(map);
 }
