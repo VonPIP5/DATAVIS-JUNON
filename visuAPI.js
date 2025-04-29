@@ -38,14 +38,24 @@ const leafletMarkersByCodeBSS = {};
 let lastClickedLeafletMarker = null;
 
 /**
- * Fonctions utiles pour la création du tube de données
- * getMaxdataCount : récupérer le nombre maximum de données pour chaque station
- * getMinMaxValues : récupérer les valeurs min et max de chaque série de données
+ * Fonctions permettant la création du tube de données et tout ce qui en suit
+ */
+
+/**
+ * Récupérer le nombre maximum de données pour chaque station
+ * @param {Array} stations - Liste des stations
+ * @return {number} - Nombre maximum de données pour chaque station
  */
 
 function getMaxDataCount(stations) {
     return Math.max(...stations.map(station => station.mesuresNappes.length));
 }
+
+/**
+ * Récupérer les valeurs min et max de chaque série de données
+ * @param {Array} data - Liste des séries de données
+ * @return {Array} - Liste des objets contenant les valeurs min et max de chaque série
+ */
 
 function getMinMaxValues(data) {
     return data.map(serie => {
@@ -58,6 +68,12 @@ function getMinMaxValues(data) {
 
 /**
  * Calculer la l'échelle de couleur pour les mesures
+ * @param {Array} color_begin - Couleur de début: rouge (RGB)
+ * @param {Array} color_end - Couleur de fin: bleu (RGB)
+ * @param {number} min - Valeur minimale de la série de données
+ * @param {number} max - Valeur maximale de la série de données
+ * @param {number} value - Valeur à coloriser
+ * @return {Array} - Couleur calculée (RGB)
  */
 
 function echelleCouleur(color_begin, color_end, min, max, value) {
@@ -78,6 +94,8 @@ function echelleCouleur(color_begin, color_end, min, max, value) {
 
 /**
  * Normaliser les dates pour l'affichage
+ * @param {Array} stations - Liste des stations
+ * @return {Array} - Liste des dates uniques triées
  */
 
 function getAllDates(stations) {
@@ -94,7 +112,9 @@ function getAllDates(stations) {
 }
 
 /**
- * Inverser la date s'il le faut 
+ * Inverser la date s'il le faut
+ * @param {string} date - Date au format YYYY-MM-DD
+ * @return {string} - Date au format DD-MM-YYYY
  */
 
 function invertDate(date) {
@@ -104,6 +124,11 @@ function invertDate(date) {
 
 /**
  * Calcul de la distance euclidienne entre deux coordonnées de stations
+ * @param {number} lon1 - Longitude de la première station
+ * @param {number} lat1 - Latitude de la première station
+ * @param {number} lon2 - Longitude de la deuxième station
+ * @param {number} lat2 - Latitude de la deuxième station
+ * @return {number} - Distance euclidienne entre les deux stations
  */
 
 function euclideanDistance(lon1, lat1, lon2, lat2) {
@@ -114,6 +139,8 @@ function euclideanDistance(lon1, lat1, lon2, lat2) {
 
 /**
  * Création de la matrice de distance ici (appel via la fonction sortStationsByProximity) 
+ * @param {Array} stations - Liste des stations
+ * @return {Array} - Matrice de distance entre les stations
  */
 
 function createDistanceMatrix(stations) {
@@ -131,41 +158,54 @@ function createDistanceMatrix(stations) {
 
 /**
  * Triage des stations à l'aide d'une matrice de distance 
+ * Récupérer les deux stations les plus proches puis ajouter la station la plus proche de la dernière station ajoutée
+ * @param {Array} stations - Liste des stations
+ * @return {Array} - Liste des stations triées par proximité
+ * @throws {Error} - Si la liste des stations est vide ou contient moins de deux stations
  */
 
 function sortStationsByProximity(stations) {
     if (stations.length < 2) return stations;
 
     const distanceMatrix = createDistanceMatrix(stations);
+    const visited = new Set();
+    const sorted = [];
 
-    const sorted = [stations[0]];
-    const remaining = new Set(stations.slice(1));
+    // Trouver le premier point (par exemple celui qui a la plus petite latitude)
+    let currentIndex = stations.reduce((minIndex, station, index, array) => 
+        station.latitude < array[minIndex].latitude ? index : minIndex
+    , 0);
+
+    sorted.push(stations[currentIndex]);
+    visited.add(currentIndex);
 
     while (sorted.length < stations.length) {
-        let closest = null;
+        let closestIndex = -1;
         let minDist = Infinity;
-        let insertPos = sorted.length;
 
-        remaining.forEach(station => {
-            sorted.forEach((existing, idx) => {
-                const dist = distanceMatrix[stations.indexOf(existing)][stations.indexOf(station)];
+        // Chercher parmi toutes les stations NON VISITÉES, la plus proche d'UNE QUELCONQUE station déjà dans sorted
+        for (let i = 0; i < stations.length; i++) {
+            if (visited.has(i)) continue;
+
+            for (let j = 0; j < sorted.length; j++) {
+                const sortedIndex = stations.indexOf(sorted[j]);
+                const dist = distanceMatrix[sortedIndex][i];
                 if (dist < minDist) {
                     minDist = dist;
-                    closest = station;
-                    insertPos = idx + 1;
+                    closestIndex = i;
                 }
-            });
-        });
+            }
+        }
 
-        if (closest) {
-            sorted.splice(insertPos, 0, closest);
-            remaining.delete(closest);
+        if (closestIndex !== -1) {
+            sorted.push(stations[closestIndex]);
+            visited.add(closestIndex);
         }
     }
 
-    console.log("Distance la plus courte:", sorted.map(s => s.codeBSS).join(" -> "));
     return sorted;
 }
+
 
 /**
  * Récupération des données de niveaux de nappe de l'API 
@@ -223,6 +263,8 @@ baseInfosPannel.innerHTML = `
 
 /**
  * Créer le polygone support des données de mesure
+ * @type {AFRAME.Component}
+ * @description Composant A-Frame pour créer un polygone 3D représentant les données de niveaux de nappes
  */
 
 AFRAME.registerComponent('polygon', {
@@ -231,7 +273,12 @@ AFRAME.registerComponent('polygon', {
         depth: { type: 'number', default: 1, min: 1 }
     },
 
-    // Set le nombre de côtés en fonction du nombre de séries de données
+    /** 
+     * Set le nombre de côtés en fonction du nombre de séries de données
+     * @param {number} sides - Nombre de côtés du polygone
+     * @param {number} depth - Profondeur du polygone
+     */
+
     init: function () {
         document.addEventListener('stationsDataLoaded', () => {
             const stations = departementStationsInformations.stations;
@@ -243,57 +290,74 @@ AFRAME.registerComponent('polygon', {
         });
     },
 
+    /**
+     * Met à jour le polygone en fonction du nombre de côtés et de la profondeur
+     * @param {number} sides - Nombre de côtés du polygone
+     */
+
     updatePolygon: function (sides) {
         const maxDataCount = getMaxDataCount(departementStationsInformations.stations);
         const seriesMinMax = getMinMaxValues(
-            departementStationsInformations.stations.map(station => station.mesuresNappes.map(mesure => mesure.niveauNappe))
+            departementStationsInformations.stations.map(station =>
+                station.mesuresNappes.map(mesure => mesure.niveauNappe)
+            )
         );
-
+    
         const shape = new THREE.Shape();
         const angleStep = (Math.PI * 2) / sides;
         const radius = 2;
-
-        if (sides < 3) {
-            console.error("Le nombre de côtés doit être au moins 3.");
-            return;
-        }
-
-        // Tracage du polygone
+    
+        // Création du polygone
         for (let i = 0; i < sides; i++) {
             const x = Math.cos(i * angleStep) * radius;
             const y = Math.sin(i * angleStep) * radius;
-            if (i === 0) {
-                shape.moveTo(x, y);
-            } else {
-                shape.lineTo(x, y);
-            }
+            if (i === 0) shape.moveTo(x, y);
+            else shape.lineTo(x, y);
         }
-
-        shape.lineTo(Math.cos(0) * radius, Math.sin(0) * radius);
-
-        const extrudeSettings = {
-            depth: -maxDataCount / 4,
-            bevelEnabled: false
-        };
-
+        shape.lineTo(radius, 0); // Fermer le polygone
+    
+        const extrudeSettings = { depth: -maxDataCount / 4, bevelEnabled: false };
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         const material = new THREE.MeshStandardMaterial({
             color: '#000000',
             transparent: true,
             opacity: 0,
-
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            depthWrite: false
         });
+    
         const mesh = new THREE.Mesh(geometry, material);
         mesh.rotation.x = Math.PI / 2;
+    
+        // Faire en sorte que la face avec la série[0] soit face à la caméra
+        const camera = document.querySelector('[camera]');
+        if (camera) {
+            const cameraWorldPos = new THREE.Vector3();
+            camera.object3D.getWorldPosition(cameraWorldPos);
+            const polygonWorldPos = new THREE.Vector3();
+            this.el.object3D.getWorldPosition(polygonWorldPos);
+    
+            const angleToCamera = Math.atan2(
+                cameraWorldPos.z - polygonWorldPos.z,
+                cameraWorldPos.x - polygonWorldPos.x
+            );
 
+            const firstFaceOffset = angleStep / 2;
+            mesh.rotation.y = -angleToCamera + firstFaceOffset;
+        }
+    
         this.el.setObject3D('mesh', mesh);
-
         this.createDataRectangles(sides, maxDataCount, seriesMinMax, radius);
     },
-
+    
     /**
-     * Création des rectangles de mesures de données en greyscale
+     * Création de rectangles représentant les données de niveaux de nappes pour chaque station
+     * @param {number} sides - Nombre de côtés du polygone
+     * @param {number} maxDataCount - Nombre maximum de données pour chaque station
+     * @param {Array} seriesMinMax - Liste des objets contenant les valeurs min et max de chaque série
+     * @param {number} radius - Rayon du polygone
+     * @throws {Error} - Si le nombre de côtés est inférieur à 3
+     * @throws {Error} - Si le nombre de données est inférieur à 1
      */
 
     createDataRectangles: function (sides, maxDataCount, seriesMinMax, radius) {
@@ -357,6 +421,7 @@ AFRAME.registerComponent('polygon', {
                     infoPanel.innerHTML = `
                         <h2> ${info.commune} </h2>
                         <p><span class='bold'>Code BSS:</span> ${info.codeBSS} </p>
+                        <p><span class='bold'>Coordonnées:</span> ${info.longitude}, ${info.latitude} </p>
                         <p><span class='bold'>Altitude:</span> ${info.altitude} mètres</p>
                         <p><span class='bold'>Profondeur:</span> ${info.profondeurNappe} mètres</p>
                         <hr/>
@@ -471,6 +536,8 @@ AFRAME.registerComponent('polygon', {
                     infosStation: {
                         commune: stationInformations?.commune || null,
                         codeBSS: stationInformations?.codeBSS || null,
+                        latitude: stationInformations?.latitude || null,
+                        longitude: stationInformations?.longitude || null,
                         altitude: stationInformations?.altitude || null,
                         profondeurNappe: dataPoint?.profondeurNappe || null,
                         date_mesure: dataPoint?.date || null,
@@ -527,6 +594,7 @@ resetButton.addEventListener('click', () => {
 
 /**
  * Coloriser en blanc la série de mesures sélectionnée
+ * @param {string} codeBSS - Le code BSS de la station à afficher
  */
 
 function highlightSerieByCodeBSS(codeBSS) {
@@ -546,8 +614,8 @@ function highlightSerieByCodeBSS(codeBSS) {
     departementStationsInformations.stations.forEach((station, index) => {
         if (station.codeBSS !== codeBSS) return;
 
-        const serie = station.mesuresNappes;
-        const nbMesures = serie.length;
+        const stactionCible = station;
+        const serie = stactionCible.mesuresNappes;
 
         const angleStep = (Math.PI * 2) / departementStationsInformations.stations.length;
         const angle = index * angleStep;
@@ -625,6 +693,11 @@ function resetLabelHighlight() {
     });
 }
 
+/**
+ * Faire tourner le polygone pour qu'il fasse face à la caméra
+ * @param {string} codeBSS - Le code BSS de la station à afficher
+ */
+
 function rotatePolygonToFaceCamera(codeBSS) {
     const polygon = document.querySelector('[polygon]');
     const camera = document.querySelector('[camera]');
@@ -682,6 +755,8 @@ function rotatePolygonToFaceCamera(codeBSS) {
 
 /**
  * Récupération des coordonnées des stations du département pour en calculer l'average et les retourner pour permettre la création de la carte centrée
+ * @param {Array} stations - Liste des stations
+ * @return {Object} - Objet contenant les coordonnées, la latitude et la longitude moyennes
  */
 
 function getCoordsAndAvg(stations) {
@@ -702,7 +777,11 @@ function getCoordsAndAvg(stations) {
 }
 
 /**
- * Création d'une map avec Leaflet pour afficher les stations sur une carte
+ * Création d'une carte avec Leaflet pour afficher et situer les stations
+ * @param {Array} coords - Liste des coordonnées des stations
+ * @param {number} avgLat - Latitude moyenne des stations
+ * @param {number} avgLon - Longitude moyenne des stations
+ * @throws {Error} - Si la liste des coordonnées est vide
  */
 
 function generateMap(coords, avgLat, avgLon) {
