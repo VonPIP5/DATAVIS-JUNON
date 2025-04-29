@@ -158,61 +158,88 @@ function createDistanceMatrix(stations) {
 
 /**
  * Triage des stations à l'aide d'une matrice de distance 
- * Récupérer les deux stations les plus proches puis ajouter la station la plus proche de la dernière station ajoutée
+ * Récupérer les deux stations les plus proches puis ajouter la station la plus proche de la dernière station ajoutée alternativement
  * @param {Array} stations - Liste des stations
  * @return {Array} - Liste des stations triées par proximité
- * @throws {Error} - Si la liste des stations est vide ou contient moins de deux stations
  */
 
 function sortStationsByProximity(stations) {
-    if (stations.length < 2) {
-        throw new Error("La liste des stations doit contenir au moins deux stations.");
-    }
+    if (stations.length < 2) return stations;
 
     const distanceMatrix = createDistanceMatrix(stations);
     const visited = new Set();
     const sorted = [];
 
-    // Choisir la station de départ en tenant compte de la latitude et de la longitude
-    let currentIndex = stations.reduce((minIndex, station, index, array) => {
-        // Comparer les latitudes, et en cas d'égalité, comparer les longitudes
-        if (station.latitude < array[minIndex].latitude) {
-            return index;
-        }
-        if (station.latitude === array[minIndex].latitude && station.longitude < array[minIndex].longitude) {
-            return index;
-        }
-        return minIndex;
-    }, 0);
+    // Trouver la paire de stations la plus proche
+    let minDist = Infinity;
+    let stationAIndex = 0;
+    let stationBIndex = 1;
 
-    sorted.push(stations[currentIndex]);
-    visited.add(currentIndex);
+    for (let i = 0; i < stations.length; i++) {
+        for (let j = i + 1; j < stations.length; j++) {
+            const dist = distanceMatrix[i][j];
+            if (dist < minDist) {
+                minDist = dist;
+                stationAIndex = i;
+                stationBIndex = j;
+            }
+        }
+    }
 
-    // Boucle jusqu'à ce que toutes les stations soient visitées
+    // Ajouter les deux stations les plus proches au début de la liste triée
+    sorted.push(stations[stationAIndex]);
+    sorted.push(stations[stationBIndex]);
+    visited.add(stationAIndex);
+    visited.add(stationBIndex);
+
+    // Ajouter alternativement les stations les plus proches des extrémités
     while (visited.size < stations.length) {
-        let closestIndex = -1;
-        let minDist = Infinity;
+        // Trouver les stations non visitées les plus proches de chaque extrémité
+        const closestToFirst = findClosestUnvisited(stations, distanceMatrix, sorted[0], visited);
+        const closestToLast = findClosestUnvisited(stations, distanceMatrix, sorted[sorted.length - 1], visited);
 
-        // Trouver la station la plus proche de la station actuelle
-        for (let i = 0; i < stations.length; i++) {
-            if (visited.has(i)) continue;
+        // Calculer les distances respectives
+        const distToFirst = distanceMatrix[stations.indexOf(sorted[0])][stations.indexOf(closestToFirst)]
+        const distToLast = distanceMatrix[stations.indexOf(sorted[sorted.length - 1])][stations.indexOf(closestToLast)]
 
-            const dist = distanceMatrix[currentIndex][i];
+        // Ajouter la station la plus proche à l'extrémité correspondante
+        if (distToFirst < distToLast) {
+            sorted.unshift(closestToFirst);
+            visited.add(stations.indexOf(closestToFirst));
+        } else if (closestToLast) {
+            sorted.push(closestToLast);
+            visited.add(stations.indexOf(closestToLast));
+        }
+    }
+
+    return sorted;
+}
+
+/**
+ * Trouver la station non visitée la plus proche d'une station de référence
+ * @param {Array} stations - Liste des stations
+ * @param {Array} distanceMatrix - Matrice de distance entre les stations
+ * @param {Object} referenceStation - Station de référence
+ * @param {Set} visited - Ensemble des stations visitées
+ * @return {Object} - Station la plus proche non visitée
+ */
+
+function findClosestUnvisited(stations, distanceMatrix, referenceStation, visited) {
+    const refIndex = stations.indexOf(referenceStation);
+    let closestIndex = -1;
+    let minDist = Infinity;
+
+    for (let i = 0; i < stations.length; i++) {
+        if (!visited.has(i) && i !== refIndex) {
+            const dist = distanceMatrix[refIndex][i];
             if (dist < minDist) {
                 minDist = dist;
                 closestIndex = i;
             }
         }
-
-        // Ajouter la station la plus proche à la liste triée
-        if (closestIndex !== -1) {
-            sorted.push(stations[closestIndex]);
-            visited.add(closestIndex);
-            currentIndex = closestIndex;
-        }
     }
 
-    return sorted;
+    return closestIndex !== -1 ? stations[closestIndex] : null;
 }
 
 /**
@@ -310,11 +337,11 @@ AFRAME.registerComponent('polygon', {
                 station.mesuresNappes.map(mesure => mesure.niveauNappe)
             )
         );
-    
+
         const shape = new THREE.Shape();
         const angleStep = (Math.PI * 2) / sides;
         const radius = 2;
-    
+
         // Création du polygone
         for (let i = 0; i < sides; i++) {
             const x = Math.cos(i * angleStep) * radius;
@@ -323,7 +350,7 @@ AFRAME.registerComponent('polygon', {
             else shape.lineTo(x, y);
         }
         shape.lineTo(radius, 0); // Fermer le polygone
-    
+
         const extrudeSettings = { depth: -maxDataCount / 4, bevelEnabled: false };
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         const material = new THREE.MeshStandardMaterial({
@@ -333,10 +360,10 @@ AFRAME.registerComponent('polygon', {
             side: THREE.DoubleSide,
             depthWrite: false
         });
-    
+
         const mesh = new THREE.Mesh(geometry, material);
         mesh.rotation.x = Math.PI / 2;
-    
+
         // Faire en sorte que la face avec la série[0] soit face à la caméra
         const camera = document.querySelector('[camera]');
         if (camera) {
@@ -344,7 +371,7 @@ AFRAME.registerComponent('polygon', {
             camera.object3D.getWorldPosition(cameraWorldPos);
             const polygonWorldPos = new THREE.Vector3();
             this.el.object3D.getWorldPosition(polygonWorldPos);
-    
+
             const angleToCamera = Math.atan2(
                 cameraWorldPos.z - polygonWorldPos.z,
                 cameraWorldPos.x - polygonWorldPos.x
@@ -353,11 +380,11 @@ AFRAME.registerComponent('polygon', {
             const firstFaceOffset = angleStep / 2;
             mesh.rotation.y = -angleToCamera + firstFaceOffset;
         }
-    
+
         this.el.setObject3D('mesh', mesh);
         this.createDataRectangles(sides, maxDataCount, seriesMinMax, radius);
     },
-    
+
     /**
      * Création de rectangles représentant les données de niveaux de nappes pour chaque station
      * @param {number} sides - Nombre de côtés du polygone
