@@ -322,7 +322,9 @@ AFRAME.registerComponent('polygon', {
             if (i === 0) shape.moveTo(x, y);
             else shape.lineTo(x, y);
         }
-        shape.lineTo(radius, 0); // Fermer le polygone
+
+        // Fermer le polygone
+        shape.lineTo(radius, 0);
     
         const extrudeSettings = { depth: -maxDataCount / 4, bevelEnabled: false };
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -512,8 +514,9 @@ AFRAME.registerComponent('polygon', {
                 const depth = 0.01;
                 const posY = j * height + height / 2;
 
+                // on saute les mesures manquantes, donc espace vide
                 if (!dataPoint || dataPoint.niveauNappe === null || isNaN(dataPoint.niveauNappe)) {
-                    continue; // on saute les mesures manquantes, donc espace vide
+                    continue; 
                 }
 
                 const value = dataPoint.niveauNappe;
@@ -794,7 +797,7 @@ function getCoordsAndAvg(stations) {
 
 function generateMap(coords, avgLat, avgLon) {
     const mapPanel = document.getElementById('mapPanel');
-    mapPanel.innerHTML = "<div id='map' style='width: 800px; height: 800px;'></div>";
+    mapPanel.innerHTML = "<div id='map' style='width: 500px; height: 500px;'></div>";
 
     const map = L.map('map').setView([avgLon, avgLat], 9);
 
