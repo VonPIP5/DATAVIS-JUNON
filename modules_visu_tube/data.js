@@ -85,7 +85,7 @@ function euclideanDistance(lon1, lat1, lon2, lat2) {
  * @return {Array} - Matrice de distance entre les stations
  */
 
-function createDistanceMatrix(stations) {
+export function createDistanceMatrix(stations) {
     const distanceMatrix = stations.map(s1 =>
         stations.map(s2 =>
             s1 === s2 ? 0 : euclideanDistance(
@@ -115,42 +115,54 @@ export function sortStationsByProximity(stations) {
     const visited = new Set();
     const sorted = [];
 
-    // Choisir la station de départ en tenant compte de la latitude et de la longitude
-    let currentIndex = stations.reduce((minIndex, station, index, array) => {
-        // Comparer les latitudes, et en cas d'égalité, comparer les longitudes
-        if (station.latitude < array[minIndex].latitude) {
-            return index;
-        }
-        if (station.latitude === array[minIndex].latitude && station.longitude < array[minIndex].longitude) {
-            return index;
-        }
-        return minIndex;
-    }, 0);
+    let closestIndex = -1;
+    let minDist = Infinity;
+    let top = -1;
+    let last = -1;
 
-    sorted.push(stations[currentIndex]);
-    visited.add(currentIndex);
+    distanceMatrix.forEach((distStation, key1) => {
+        distStation.forEach((dist, key2) => {
+            if (dist < minDist && key1 !== key2) {
+                top = key1;
+                last = key2;
+                minDist = dist;
+            }
+        });
+    });
 
-    // Boucle jusqu'à ce que toutes les stations soient visitées
     while (visited.size < stations.length) {
         let closestIndex = -1;
+        let position = 0;
         let minDist = Infinity;
-
         // Trouver la station la plus proche de la station actuelle
         for (let i = 0; i < stations.length; i++) {
             if (visited.has(i)) continue;
 
-            const dist = distanceMatrix[currentIndex][i];
-            if (dist < minDist) {
-                minDist = dist;
+            const dist1 = distanceMatrix[top][i];
+            const dist2 = distanceMatrix[last][i];
+
+            if (dist1 < minDist) {
+                minDist = dist1;
                 closestIndex = i;
+                position = 0;
+            }
+            if (dist2 < minDist) {
+                minDist = dist2;
+                closestIndex = i;
+                position = 1;
             }
         }
 
         // Ajouter la station la plus proche à la liste triée
         if (closestIndex !== -1) {
-            sorted.push(stations[closestIndex]);
             visited.add(closestIndex);
-            currentIndex = closestIndex;
+            if (position === 0) {
+                sorted.unshift(stations[closestIndex]);
+                top = closestIndex;
+            } else {
+                sorted.push(stations[closestIndex]);
+                last = closestIndex;
+            }
         }
     }
 
