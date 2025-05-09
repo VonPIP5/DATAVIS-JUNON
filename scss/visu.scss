@@ -1,0 +1,172 @@
+/**
+ * 3dvisu version SCSS
+ */
+
+// Variables
+$panel-bg: rgba(255, 255, 255, 0.85);
+$panel-border-radius: 8px;
+$panel-padding: 15px;
+$chart-border: 1px solid #333;
+$chart-border-radius: 5px;
+$primary-color: #3b635c;
+
+/**
+* Style général des panels
+*/
+
+@mixin panel-base($z-index: 500) {
+    position: fixed;
+    padding: $panel-padding;
+    border-radius: $panel-border-radius;
+    background: $panel-bg;
+    font-family: Arial, sans-serif;
+    z-index: $z-index;
+}
+
+@mixin panel-graph-base() {
+    border: $chart-border;
+    border-radius: $chart-border-radius;
+}
+
+.overlay {
+    @include panel-base(999);
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+}
+
+/**
+* Style du panel qui affiche les graphiques
+*/
+
+.graphique-panel {
+    @include panel-base(1000);
+    top: 5%;
+    left: 5%;
+    width: 90vw;
+    height: 90vh;
+    background: white;
+    display: none;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    overflow: hidden;
+
+    &.active {
+        display: grid;
+    }
+
+    .multi-line-chart,
+    .normalized-chart,
+    .radial-stacked-chart {
+        @include panel-graph-base;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: white;
+    }
+
+    .multi-line-chart {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .normalized-chart {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .radial-stacked-chart {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+    }
+}
+
+/**
+* Style des panels d'informations
+*/
+
+.base-infos-panel {
+    @include panel-base;
+    top: 20px;
+    left: 20px;
+    max-width: 500px;
+}
+
+.search-panel {
+    @include panel-base;
+    top: 20px;
+    right: 20px;
+    max-width: 300px;
+
+    .searchInput {
+        width: 80%;
+        padding: 5px;
+        margin-bottom: 5px;
+    }
+}
+
+.info-panel {
+    @include panel-base;
+    display: none;
+    bottom: 20px;
+    left: 20px;
+    max-width: 500px;
+}
+
+.map-panel {
+    @include panel-base;
+    bottom: 60px;
+    right: 20px;
+    width: 500px;
+    height: 500px;
+}
+
+/**
+* Style des boutons
+*/
+
+.visuGraphique,
+.search,
+.reset {
+    padding: 5px;
+    background-color: $primary-color;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+.search {
+    margin-right: 5px;
+}
+
+.bold {
+    font-weight: bolder;
+}
+
+/**
+* Style de la carte Leaflet
+*/
+
+.leaflet-control.legend {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    color: #333;
+    max-width: 150px;
+
+    img.imgLegendeMap {
+        width: 12px;
+        height: 20px;
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+}

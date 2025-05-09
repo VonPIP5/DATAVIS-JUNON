@@ -1,3 +1,9 @@
+/**
+ * @file map.js
+ * Module de gestion de la carte interactive avec Leaflet
+ * Récupération des coordonnées, création de la carte et gestion des événements
+ */
+
 import { rotatePolygonToFaceCamera, highlightSerieByCodeBSS } from './visualisation.js';
 
 const leafletMarkersByCodeBSS = {};

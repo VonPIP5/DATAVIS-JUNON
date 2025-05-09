@@ -1,10 +1,11 @@
 /**
+ * @file visualisation.js
  * Module de visualisation 3D avec A-Frame
  * Gère le polygone 3D et les éléments de visualisation
  */
 
 import { departementStationsInformations, getMaxDataCount, getMinMaxValues, getAllDates, getCoordsAndAvg } from './data.js';
-import { infoPanel } from '../visuApiMain.js';
+import { infoPanel, graphiquePanel } from '../visuApiMain.js';
 import { generateMap, leafletMarkersByCodeBSS } from './map.js';
 
 const color_begin = [216, 31, 7]; // Rouge

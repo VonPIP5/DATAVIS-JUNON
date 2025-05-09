@@ -1,4 +1,5 @@
 /**
+ * @file data.js
  * Module de gestion des données
  * Récupération, traitement et préparation des données pour la visualisation
  */

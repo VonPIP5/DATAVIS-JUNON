@@ -1,4 +1,5 @@
 /** 
+ * @file visuApiMain.js
  * Point d'entrée principal de la visualisation des données Hub'eau
  * Importe et coordonne les différents modules
  */
@@ -6,18 +7,25 @@
 import { fetchStationsData, departementStationsInformations, invertDate, getCoordsAndAvg, stationsData, dateDebut, dateFin } from './modules_visu_tube/data.js';
 import { registerPolygonComponent, highlightSerieByCodeBSS, rotatePolygonToFaceCamera } from './modules_visu_tube/visualisation.js';
 import { generateMap } from './modules_visu_tube/map.js';
+import { createMultiLineChart, createNormalizedChart } from './modules_visu_tube/graphs.js';
 
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('search');
 const resetButton = document.getElementById('reset');
 const infoPanel = document.getElementById('infoPanel');
-const baseInfosPannel = document.getElementById('baseInfosPanel');
+const baseInfosPanel = document.getElementById('baseInfosPanel');
+const overlay = document.getElementById('overlay');
 
+const graphiquePanel = document.getElementById('graphiquePanel');
+const multiLineChartSection = document.getElementById('multiLineChartSection');
+const normalizedChartSection = document.getElementById('normalizedChartSection');
+const radialStackedChartSection = document.getElementById('radialStackedChartSection');
 
 // Initialisation de l'interface
-baseInfosPannel.innerHTML = `
+baseInfosPanel.innerHTML = `
     <h1>${stationsData.departement}</h1>
     <h3><span class='bold'>Intervalle de temps:</span> ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)}</h3>
+    <button id='visuGraphique' class='visuGraphique'>Visualisation graphique</button>
 `;
 
 // Enregistrement du composant A-Frame
@@ -68,6 +76,26 @@ function searchStation() {
     }
 }
 
-// Fonctions globales exportées
-// export { highlightSerieByCodeBSS, rotatePolygonToFaceCamera, resetLabelHighlight };
-export { infoPanel };
+document.getElementById('visuGraphique').addEventListener('click', function () {
+    overlay.style.display = 'block';
+    graphiquePanel.classList.toggle('active');
+    
+    const multiLineChart = createMultiLineChart();
+    multiLineChartSection.innerHTML = '';
+    multiLineChartSection.appendChild(multiLineChart);
+    
+    const normalizedChart = createNormalizedChart();
+    console.log("Normalized Chart");
+    normalizedChartSection.innerHTML = '';
+    normalizedChartSection.appendChild(normalizedChart);
+    
+});
+
+overlay.addEventListener('click', function () {
+    overlay.style.display = 'none';
+    graphiquePanel.style.display = 'none';
+    graphiquePanel.classList.toggle('active');
+});
+
+// Variables globales exportées
+export { infoPanel, graphiquePanel };
