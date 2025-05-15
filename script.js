@@ -123,7 +123,7 @@ boutonPeriodeSpecifique.addEventListener("click", () => {
 // ------------------------- Fin de bouton pour la visualisation 3D en colonne/tube -------------------------
 
 // ________________________       MAPS        _______________________________
-window.open3DView = async function(codeBss) {
+window.open3DView = async function (codeBss) {
     //Trouver le marker correspondant
     let targetMarker;
     map.eachLayer(layer => {
@@ -172,50 +172,88 @@ window.open3DView = async function(codeBss) {
     };
 
     // Récupérer les informations pour l'algorithme
+    // try {
+    //     // Utiliser la période sélectionnée pour filtrer les stations avec données sur la période
+    //     const urlDepartementStations = `${listeStations}?code_departement=${selectDepartement.value}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+    //     const urlChroniquesStationsfiltre = `${listeCPiezometriques}?code_bss=${bssActuelFiltre}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+    //     const response = await fetch(urlDepartementStations);
+    //     const reponsefiltre = await fetch(urlChroniquesStationsfiltre);
+    //     const data = await response.json();
+    //     const datafiltre = await reponsefiltre.json();
+    //     console.log("data", data);
+    //     console.log("datafiltre", datafiltre);
+
+    //     if (data.data && data.data.length > 0) {
+    //         data.data.forEach(element => {
+    //             if (datafiltre.data && datafiltre.data.length > 0) {
+    //                 visualizationData.infoPourAlgo = data.data.map(station => ({
+    //                     BSS: station.code_bss,
+    //                     longitude: station.x,
+    //                     latitude: station.y
+    //                 }));
+    //             }
+    //         });
+    //     }
+    // }
+
     try {
         // Utiliser la période sélectionnée pour filtrer les stations avec données sur la période
         const urlDepartementStations = `${listeStations}?code_departement=${selectDepartement.value}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
-        const urlChroniquesStationsfiltre =`${listeCPiezometriques}?code_bss=${bssActuelFiltre}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
         const response = await fetch(urlDepartementStations);
-        const reponsefiltre = await fetch(urlChroniquesStationsfiltre);
         const data = await response.json();
-        const datafiltre = await reponsefiltre.json();
-        console.log("data", data);
-        console.log("datafiltre", datafiltre);
 
-        if (data.data && data.data.length > 0) {
-        data.data.forEach(element => {
-            if (datafiltre.data && datafiltre.data.length > 0) {
-            visualizationData.infoPourAlgo = data.data.map(station => ({
+        if (data.data.length > 0) {
+            const codeBSS = data.data.map(station => station.code_bss);
+        }
+
+        const urlChroniquesStationsFiltre = `${listeCPiezometriques}?code_bss=${codeBSS}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+        const reponseFiltre = await fetch(urlChroniquesStationsFiltre);
+        const dataFiltre = await reponseFiltre.json();
+
+        // console.log("data", data);
+        // console.log("datafiltre", datafiltre);
+
+        // if (data.data && data.data.length > 0) {
+        //     data.data.forEach(element => {
+        //         if (datafiltre.data && datafiltre.data.length > 0) {
+        //             visualizationData.infoPourAlgo = data.data.map(station => ({
+        //                 BSS: station.code_bss,
+        //                 longitude: station.x,
+        //                 latitude: station.y
+        //             }));
+        //         }
+        //     });
+        // }
+        
+        if (dataFiltre.data.length > 0) {
+            visualizationData.infoPourAlgo = dataFiltre.data.map(station => ({
                 BSS: station.code_bss,
                 longitude: station.x,
                 latitude: station.y
             }));
         }
-        }); 
     }
-}
     catch (error) {
         console.error("Erreur lors de la récupération des informations pour l'algorithme :", error);
     };
-    
-   
+
+
 
 
     //Récupérer les données du graphique
     try {
         const chartId = 'myChartNiveau' + codeBss;
         const chart = Chart.getChart(chartId);
-        
+
         if (chart && chart.data) {
             visualizationData.waterLevels = chart.data.datasets[0].data
                 .map((point, index) => ({
                     value: typeof point === 'object' ? point.value : point,
                     date: chart.data.labels[index] || `${index + 1}/${new Date().getFullYear()}`
                 }));
-            
-            visualizationData.lastMeasurement = visualizationData.waterLevels.length > 0 
-                ? visualizationData.waterLevels[visualizationData.waterLevels.length - 1].value 
+
+            visualizationData.lastMeasurement = visualizationData.waterLevels.length > 0
+                ? visualizationData.waterLevels[visualizationData.waterLevels.length - 1].value
                 : null;
 
             //Sauvegarder les données du graphique pour la reconstruction
@@ -274,7 +312,7 @@ window.open3DView = async function(codeBss) {
     try {
         console.log("Données envoyées à la 3D:", visualizationData);
         sessionStorage.setItem('waterData', JSON.stringify(visualizationData));
-        
+
         const newWindow = window.open('versiontest copy.html', '_blank');
         if (!newWindow) {
             alert("Veuillez autoriser les popups pour cette fonctionnalité");
@@ -773,7 +811,7 @@ function markerCouleurViolet(info1erUrl, tousLesMarkers) {
     marker.addEventListener("click", () => {
         afficheForYou(info1erUrl.code_bss);
 
-    console.log(data.data)
+        console.log(data.data)
     });
 }
 
@@ -954,7 +992,7 @@ function afficheResultatComplet(infos, url1StationLCP, dataPoints, url1StationLC
         })
         .then(data => {
             let tabJustDate = []
-        
+
             if (data.count == 0) {
                 let resultat0 = document.createElement("p")
                 resultat0.classList.add("col-6")
@@ -1796,7 +1834,7 @@ function explicationScore(score) {
 function graphNiveauDeauTR(tabDataTR, codeBss, div3erGraphique, result, lien2Graph1, lien2Graph2) {
     const labels = [];
     const values = [];
-if (codeBss=="04307X0001/P1"){ console.log(codeBss,tabDataTR);};
+    if (codeBss == "04307X0001/P1") { console.log(codeBss, tabDataTR); };
     let tableauCroissant = []
 
     let tabDataTRChrono = tabDataTR.reverse()
@@ -1810,7 +1848,7 @@ if (codeBss=="04307X0001/P1"){ console.log(codeBss,tabDataTR);};
         tableauCroissant.push(point.value);
         tableauCroissant.sort((a, b) => a - b);
     })
-    
+
     let valeurMediane
     let q1
     let q3
