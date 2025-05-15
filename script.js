@@ -225,6 +225,8 @@ window.open3DView = async function (codeBss) {
         //     });
         // }
 
+        console.log("dataFiltre", dataFiltre);
+
         if (dataFiltre.data.length > 0) {
             visualizationData.infoPourAlgo.push =({
                 BSS: station.code_bss,
