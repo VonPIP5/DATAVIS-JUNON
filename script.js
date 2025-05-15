@@ -224,13 +224,13 @@ window.open3DView = async function (codeBss) {
         //         }
         //     });
         // }
-        
+
         if (dataFiltre.data.length > 0) {
-            visualizationData.infoPourAlgo = dataFiltre.data.map(station => ({
+            visualizationData.infoPourAlgo.push =({
                 BSS: station.code_bss,
                 longitude: station.x,
                 latitude: station.y
-            }));
+            })
         }
     }
     catch (error) {

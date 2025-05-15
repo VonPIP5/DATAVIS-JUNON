@@ -51,6 +51,8 @@ if (!stationsData || !stationsData.stations) {
                 const response = await fetch(url);
                 const data = await response.json();
 
+                console.log('')
+
                 if (data.data.length > 0) {
                     departementStationsInformations.stations.push({
                         commune: station.commune || null,
