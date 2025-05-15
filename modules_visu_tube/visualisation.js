@@ -15,6 +15,9 @@ let currentHighlight = null;
 
 let lastClickedLeafletMarker = null;
 
+const camera = document.querySelector('#camera');
+const step = 0.2;
+
 /**
  * Enregistre le composant A-Frame polygon
  */
@@ -54,6 +57,35 @@ export function registerPolygonComponent() {
          */
 
         updatePolygon: function (sides) {
+
+            // Supprimer tous les enfants A-Frame DOM
+            while (this.el.firstChild) {
+                this.el.removeChild(this.el.firstChild);
+            }
+
+            // Supprimer le mesh principal s'il existe
+            const oldMesh = this.el.getObject3D('mesh');
+            if (oldMesh) {
+                oldMesh.geometry?.dispose();
+                oldMesh.material?.dispose();
+                this.el.removeObject3D('mesh');
+            }
+
+            // Supprimer les objets 3D ajoutés (rectangles, contours, labels 3D etc.)
+            const obj3D = this.el.object3D;
+            while (obj3D.children.length > 0) {
+                const child = obj3D.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+                obj3D.remove(child);
+            }
+
             const maxDataCount = getMaxDataCount(departementStationsInformations.stations);
             const seriesMinMax = getMinMaxValues(
                 departementStationsInformations.stations.map(station =>
@@ -65,16 +97,13 @@ export function registerPolygonComponent() {
             const angleStep = (Math.PI * 2) / sides;
             const radius = 2;
 
-            // Création du polygone
             for (let i = 0; i < sides; i++) {
                 const x = Math.cos(i * angleStep) * radius;
                 const y = Math.sin(i * angleStep) * radius;
                 if (i === 0) shape.moveTo(x, y);
                 else shape.lineTo(x, y);
             }
-
-            // Fermer le polygone
-            shape.lineTo(radius, 0);
+            shape.lineTo(radius, 0); // Fermer le polygone
 
             const extrudeSettings = { depth: -maxDataCount / 4, bevelEnabled: false };
             const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -89,7 +118,7 @@ export function registerPolygonComponent() {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.rotation.x = Math.PI / 2;
 
-            // Faire en sorte que la face avec la série[0] soit face à la caméra
+            // Rotation face caméra
             const camera = document.querySelector('[camera]');
             if (camera) {
                 const cameraWorldPos = new THREE.Vector3();
@@ -101,7 +130,6 @@ export function registerPolygonComponent() {
                     cameraWorldPos.z - polygonWorldPos.z,
                     cameraWorldPos.x - polygonWorldPos.x
                 );
-
                 const firstFaceOffset = angleStep / 2;
                 mesh.rotation.y = -angleToCamera + firstFaceOffset;
             }
@@ -109,6 +137,7 @@ export function registerPolygonComponent() {
             this.el.setObject3D('mesh', mesh);
             this.createDataRectangles(sides, maxDataCount, seriesMinMax, radius);
         },
+
 
         /**
          * Création de rectangles représentant les données de niveaux de nappes pour chaque station
@@ -123,77 +152,6 @@ export function registerPolygonComponent() {
         createDataRectangles: function (sides, maxDataCount, seriesMinMax, radius) {
             const angleStep = (Math.PI * 2) / sides;
             const sideLength = 2 * radius * Math.sin(Math.PI / sides);
-
-            let previousHighlight = null;
-
-            /**
-            * Affichage des informations de la station associée au rectangle où l'on souhaite cliquer
-            */
-
-            AFRAME.registerComponent('click-listener', {
-                init: function () {
-                    this.el.addEventListener('click', () => {
-                        const mesh = this.el.getObject3D('mesh');
-                        const data = mesh?.userData;
-
-                        // Appliquer une couleur sur la mesure sélectionnée + mise à jour si l'on clique sur une autre mesure
-                        if (previousHighlight && previousHighlight.parent) {
-                            previousHighlight.parent.remove(previousHighlight);
-                            previousHighlight = null;
-                        }
-
-                        if (mesh) {
-                            const outlineGeometry = mesh.geometry.clone();
-                            const outlineMaterial = new THREE.MeshBasicMaterial({
-                                color: '#ffffff',
-                                opacity: 0.3,
-                                transparent: true,
-                                depthWrite: false,
-                            });
-
-                            const outline = new THREE.Mesh(outlineGeometry, outlineMaterial);
-                            outline.scale.set(1.1, 1.1, 1.1);
-                            mesh.parent.add(outline);
-
-                            const scale = 1.1;
-                            outline.scale.set(scale, scale, scale);
-                            outline.position.copy(mesh.position);
-                            outline.rotation.copy(mesh.rotation);
-
-                            mesh.parent.add(outline);
-
-                            previousHighlight = outline;
-                        }
-
-                        infoPanel.style.display = 'block';
-
-                        if (!data) {
-                            infoPanel.innerHTML = `<h1>Aucune donnée récupérée.</h1>`;
-                            console.error("Aucune donnée récupérée.");
-                            return;
-                        }
-
-                        const info = data.infosStation;
-
-                        highlightSerieByCodeBSS(info.codeBSS);
-                        rotatePolygonToFaceCamera(info.codeBSS);
-
-                        infoPanel.innerHTML = `
-                        <h2> ${info.commune} </h2>
-                        <p><span class='bold'>Code BSS:</span> ${info.codeBSS} </p>
-                        <p><span class='bold'>Coordonnées:</span> ${info.longitude}, ${info.latitude} </p>
-                        <p><span class='bold'>Altitude:</span> ${info.altitude} mètres</p>
-                        <p><span class='bold'>Profondeur:</span> ${info.profondeurNappe} mètres</p>
-                        <hr/>
-                        <h3 class='bold'>Mesures</h3>
-                        <p><span class='bold'>Date de la mesure:</span> ${info.date_mesure} </p>
-                        <p><span class='bold'>Niveau de la nappe:</span> ${info.niveauNappe} mètres</p>
-                        <p><span class='bold'>Niveau minimum sur l'intervalle:</span> ${info.niveauMin} mètres</p>
-                        <p><span class='bold'>Niveau maximum sur l'intervalle:</span> ${info.niveauMax} mètres</p>
-                    `;
-                    });
-                }
-            });
 
             const allDates = getAllDates(departementStationsInformations.stations);
 
@@ -313,6 +271,77 @@ export function registerPolygonComponent() {
                     this.el.object3D.add(rectangle);
                 }
             }
+        }
+    });
+
+    let previousHighlight = null;
+
+    /**
+    * Affichage des informations de la station associée au rectangle où l'on souhaite cliquer
+    */
+
+    AFRAME.registerComponent('click-listener', {
+        init: function () {
+            this.el.addEventListener('click', () => {
+                const mesh = this.el.getObject3D('mesh');
+                const data = mesh?.userData;
+
+                // Appliquer une couleur sur la mesure sélectionnée + mise à jour si l'on clique sur une autre mesure
+                if (previousHighlight && previousHighlight.parent) {
+                    previousHighlight.parent.remove(previousHighlight);
+                    previousHighlight = null;
+                }
+
+                if (mesh) {
+                    const outlineGeometry = mesh.geometry.clone();
+                    const outlineMaterial = new THREE.MeshBasicMaterial({
+                        color: '#ffffff',
+                        opacity: 0.3,
+                        transparent: true,
+                        depthWrite: false,
+                    });
+
+                    const outline = new THREE.Mesh(outlineGeometry, outlineMaterial);
+                    outline.scale.set(1.1, 1.1, 1.1);
+                    mesh.parent.add(outline);
+
+                    const scale = 1.1;
+                    outline.scale.set(scale, scale, scale);
+                    outline.position.copy(mesh.position);
+                    outline.rotation.copy(mesh.rotation);
+
+                    mesh.parent.add(outline);
+
+                    previousHighlight = outline;
+                }
+
+                infoPanel.style.display = 'block';
+
+                if (!data) {
+                    infoPanel.innerHTML = `<h1>Aucune donnée récupérée.</h1>`;
+                    console.error("Aucune donnée récupérée.");
+                    return;
+                }
+
+                const info = data.infosStation;
+
+                highlightSerieByCodeBSS(info.codeBSS);
+                rotatePolygonToFaceCamera(info.codeBSS);
+
+                infoPanel.innerHTML = `
+                        <h2> ${info.commune} </h2>
+                        <p><span class='bold'>Code BSS:</span> ${info.codeBSS} </p>
+                        <p><span class='bold'>Coordonnées:</span> ${info.longitude}, ${info.latitude} </p>
+                        <p><span class='bold'>Altitude:</span> ${info.altitude} mètres</p>
+                        <p><span class='bold'>Profondeur:</span> ${info.profondeurNappe} mètres</p>
+                        <hr/>
+                        <h3 class='bold'>Mesures</h3>
+                        <p><span class='bold'>Date de la mesure:</span> ${info.date_mesure} </p>
+                        <p><span class='bold'>Niveau de la nappe:</span> ${info.niveauNappe} mètres</p>
+                        <p><span class='bold'>Niveau minimum sur l'intervalle:</span> ${info.niveauMin} mètres</p>
+                        <p><span class='bold'>Niveau maximum sur l'intervalle:</span> ${info.niveauMax} mètres</p>
+                    `;
+            });
         }
     });
 }
@@ -506,3 +535,17 @@ export function resetLabelHighlight() {
         });
     });
 }
+
+window.addEventListener('keydown', (e) => {
+    const position = camera.getAttribute('position');
+
+    if (e.code === 'Space') {
+        position.y += step;
+        camera.setAttribute('position', position);
+    }
+
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+        position.y -= step;
+        camera.setAttribute('position', position);
+    }
+});

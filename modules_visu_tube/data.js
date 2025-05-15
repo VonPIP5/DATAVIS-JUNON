@@ -4,6 +4,8 @@
  * Récupération, traitement et préparation des données pour la visualisation
  */
 
+import { ordreSelect } from '../visuApiMain.js';
+
 export const departementStationsInformations = {
     stations: []
 };
@@ -112,7 +114,8 @@ export function sortStationsByProximity(stations) {
         throw new Error("La liste des stations doit contenir au moins deux stations.");
     }
 
-    const distanceMatrix = createDistanceMatrix(stations);
+    const stationsCopy = [...stations];
+    const distanceMatrix = createDistanceMatrix(stationsCopy);
     const visited = new Set();
     const sorted = [];
 
@@ -131,12 +134,11 @@ export function sortStationsByProximity(stations) {
         });
     });
 
-    while (visited.size < stations.length) {
+    while (visited.size < stationsCopy.length) {
         let closestIndex = -1;
         let position = 0;
         let minDist = Infinity;
-        // Trouver la station la plus proche de la station actuelle
-        for (let i = 0; i < stations.length; i++) {
+        for (let i = 0; i < stationsCopy.length; i++) {
             if (visited.has(i)) continue;
 
             const dist1 = distanceMatrix[top][i];
@@ -154,14 +156,13 @@ export function sortStationsByProximity(stations) {
             }
         }
 
-        // Ajouter la station la plus proche à la liste triée
         if (closestIndex !== -1) {
             visited.add(closestIndex);
             if (position === 0) {
-                sorted.unshift(stations[closestIndex]);
+                sorted.unshift(stationsCopy[closestIndex]);
                 top = closestIndex;
             } else {
-                sorted.push(stations[closestIndex]);
+                sorted.push(stationsCopy[closestIndex]);
                 last = closestIndex;
             }
         }
@@ -171,10 +172,140 @@ export function sortStationsByProximity(stations) {
 }
 
 /**
+ * Triage des stations en fonction de la similarité de leurs mesures de niveau de nappe
+ * @param {Array} stations - Liste des mesures des nappesdes stations
+ * @return {Array} - Liste des stations triées par similarité de mesures
+ */
+
+export function sortStationsByMesuresNappe(stations) {
+    if (stations.length < 2) return stations;
+
+    const stationsCopy = [...stations];
+
+    // Station de référence (origine des données)
+    const referenceStation = {
+        ...stationsCopy[0],
+        mesuresNappes: interpolateNulls(stationsCopy[0].mesuresNappes)
+    };
+
+    // Préparer toutes les autres stations avec interpolation
+    const preparedStations = stationsCopy.map(station => ({
+        ...station,
+        mesuresNappes: interpolateNulls(station.mesuresNappes)
+    }));
+
+    const sorted = [referenceStation];
+    const remaining = preparedStations.filter(s => s.codeBSS !== referenceStation.codeBSS);
+
+    while (remaining.length > 0) {
+        let bestMatch = null;
+        let minDiff = Infinity;
+        let insertAtStart = true;
+
+        for (const station of remaining) {
+            const diffStart = compareStationMesures(station, sorted[0]);
+            const diffEnd = compareStationMesures(station, sorted[sorted.length - 1]);
+
+            if (diffStart < minDiff) {
+                minDiff = diffStart;
+                bestMatch = station;
+                insertAtStart = true;
+            }
+
+            if (diffEnd < minDiff) {
+                minDiff = diffEnd;
+                bestMatch = station;
+                insertAtStart = false;
+            }
+        }
+
+        if (bestMatch) {
+            insertAtStart ? sorted.unshift(bestMatch) : sorted.push(bestMatch);
+            remaining.splice(remaining.indexOf(bestMatch), 1);
+        }
+    }
+
+    // Retourner l’ordre avec les objets d’origine
+    return sorted.map(s => stationsCopy.find(orig => orig.codeBSS === s.codeBSS));
+}
+
+function interpolateNulls(mesures) {
+    const sorted = [...mesures].sort((a, b) =>
+        new Date(a.date.split('-').reverse().join('-')) - new Date(b.date.split('-').reverse().join('-'))
+    );
+
+    for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i].niveauNappe === null) {
+            let prev = i - 1;
+            while (prev >= 0 && sorted[prev].niveauNappe === null) prev--;
+
+            let next = i + 1;
+            while (next < sorted.length && sorted[next].niveauNappe === null) next++;
+
+            if (prev >= 0 && next < sorted.length) {
+                const prevVal = sorted[prev].niveauNappe;
+                const nextVal = sorted[next].niveauNappe;
+                const gap = next - prev;
+
+                for (let j = 1; j < gap; j++) {
+                    const interp = prevVal + ((nextVal - prevVal) * (j / gap));
+                    sorted[prev + j].niveauNappe = interp;
+                }
+
+                i = next - 1;
+            }
+        }
+    }
+
+    return sorted;
+}
+
+/**
+ * Compare les mesures de deux stations
+ * @param {Object} station1 - Première station
+ * @param {Object} station2 - Deuxième station
+ * @return {number} - Différence moyenne entre les mesures
+ */
+function compareStationMesures(station1, station2) {
+    const mesures1 = station1.mesuresNappes;
+    const mesures2 = station2.mesuresNappes;
+
+    // Trier les mesures par date pour s'assurer de la correspondance
+    const sorted1 = [...mesures1].sort((a, b) =>
+        new Date(a.date.split('-').reverse().join('-')) - new Date(b.date.split('-').reverse().join('-')));
+    const sorted2 = [...mesures2].sort((a, b) =>
+        new Date(a.date.split('-').reverse().join('-')) - new Date(b.date.split('-').reverse().join('-')));
+
+    // Prendre le nombre minimum de mesures pour comparer
+    const minLength = Math.min(sorted1.length, sorted2.length);
+    if (minLength === 0) return Infinity;
+
+    let totalDiff = 0;
+    let count = 0;
+
+    for (let i = 0; i < minLength; i++) {
+        const m1 = sorted1[i];
+        const m2 = sorted2[i];
+
+        if (m1.niveauNappe !== null && m2.niveauNappe !== null) {
+            totalDiff += Math.abs(m1.niveauNappe - m2.niveauNappe);
+            count++;
+        }
+    }
+
+    return count > 0 ? totalDiff / count : Infinity;
+}
+
+/**
  * Récupération des données de niveaux de nappe de l'API 
  */
 
 export async function fetchStationsData() {
+
+    // Rénitialisation de la liste des stations à chaque appel
+    departementStationsInformations.stations = [];
+
+    console.log(stationsData.stations);
 
     for (const station of stationsData.stations) {
         const url = `https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=${station.codeBss}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
@@ -203,15 +334,35 @@ export async function fetchStationsData() {
         }
     }
 
-    departementStationsInformations.stations = sortStationsByProximity(
-        departementStationsInformations.stations.filter(s =>
-            s.longitude && s.latitude
-        )
-    );
+    const ordreVisu = ordreSelect.value;
 
-    console.log("Stations triées par proximité:", departementStationsInformations.stations);
+    if (ordreVisu && ordreVisu === 'distances') {
+        departementStationsInformations.stations = sortStationsByProximity(
+            [...departementStationsInformations.stations].filter(s =>
+                s.longitude && s.latitude
+            )
+        );
+    } else if (ordreVisu && ordreVisu === 'mesures') {
+        departementStationsInformations.stations = sortStationsByMesuresNappe(
+            [...departementStationsInformations.stations].filter(s =>
+                s.mesuresNappes
+            )
+        );
+    } else {
+        console.error("Ordre de visualisation invalide:", ordreVisu);
+    }
+
+    console.log(`Stations triées par proximité de ${ordreVisu}`, departementStationsInformations.stations);
     document.dispatchEvent(new CustomEvent('stationsDataLoaded'));
 }
+
+departementStationsInformations.stations = sortStationsByMesuresNappe(
+    departementStationsInformations.stations.filter(s =>
+        s.mesuresNappes.filter(m =>
+            m.niveauNappe
+        )
+    ),
+)
 
 /**
  * Récupération des coordonnées des stations du département pour en calculer l'average et les retourner pour permettre la création de la carte centrée

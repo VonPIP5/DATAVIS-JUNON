@@ -21,6 +21,11 @@
   display: none;
 }
 
+.overlay.active {
+  display: block;
+}
+
+
 /**
 * Style du panel qui affiche les graphiques
 */
@@ -37,17 +42,18 @@
   height: 90vh;
   background: white;
   display: none;
-  -ms-grid-columns: (1fr)[2];
+  /* -ms-grid-columns: (1fr)[2];
   grid-template-columns: repeat(2, 1fr);
   -ms-grid-rows: (1fr)[2];
   grid-template-rows: repeat(2, 1fr);
-  gap: 10px;
+  gap: 10px; */
   overflow: hidden;
 }
 
 .graphique-panel.active {
-  display: -ms-grid;
-  display: grid;
+  /* display: -ms-grid;
+  display: grid; */
+  display: block;
 }
 
 .graphique-panel .multi-line-chart,

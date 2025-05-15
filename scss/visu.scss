@@ -36,6 +36,10 @@ $primary-color: #3b635c;
     height: 100vh;
     background: rgba(0, 0, 0, 0.6);
     display: none;
+
+    &.active {
+        display: block;
+    }
 }
 
 /**
@@ -46,17 +50,18 @@ $primary-color: #3b635c;
     @include panel-base(1000);
     top: 5%;
     left: 5%;
-    width: 90vw;
-    height: 90vh;
+    width: 80vw;
+    height: 80vh;
     background: white;
     display: none;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 10px;
+    // grid-template-columns: repeat(2, 1fr);
+    // grid-template-rows: repeat(2, 1fr);
+    // gap: 10px;
     overflow: hidden;
 
     &.active {
-        display: grid;
+        // display: grid;
+        display: block;
     }
 
     .multi-line-chart,

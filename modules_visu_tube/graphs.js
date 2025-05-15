@@ -7,141 +7,6 @@
 import { getAllDates, departementStationsInformations } from './data.js';
 
 /**
- * @function createMultiLineChart
- * Crée un graphique multi-lignes des niveaux de nappe pour toutes les stations
- */
-
-export function createMultiLineChart() {
-    const stations = departementStationsInformations.stations;
-
-    const panel = document.getElementById("multiLineChartSection");
-    panel.innerHTML = "";
-
-    const panelWidth = panel.clientWidth * 1;
-    const panelHeight = panel.clientHeight * 1;
-
-    const width = panelWidth;
-    const height = panelHeight;
-    const marginTop = 20;
-    const marginRight = 20;
-    const marginBottom = 30;
-    const marginLeft = 50;
-
-    const allDates = getAllDates(stations);
-    const data = stations.map(station => ({
-        name: station.codeBSS,
-        values: allDates.map(date => {
-            const mesure = station.mesuresNappes.find(m => m.date === date);
-            return {
-                date: new Date(date.split('-').reverse().join('-')),
-                niveauNappe: mesure ? mesure.niveauNappe : null
-            };
-        })
-    }));
-
-    const x = d3.scaleTime()
-        .domain(d3.extent(allDates, d => new Date(d.split('-').reverse().join('-'))))
-        .range([marginLeft, width - marginRight]);
-
-    const y = d3.scaleLinear()
-        .domain([
-            d3.min(data, d => d3.min(d.values, v => v.niveauNappe)),
-            d3.max(data, d => d3.max(d.values, v => v.niveauNappe))
-        ])
-        .nice()
-        .range([height - marginBottom, marginTop]);
-
-    const svg = d3.create("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [0, 0, width, height])
-        .attr("style", "max-width: 100%; height: auto; overflow: visible; font: 10px sans-serif;");
-
-    svg.append("g")
-        .attr("transform", `translate(0,${height - marginBottom})`)
-        .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)).tickSizeOuter(0))
-        .call(g => g.append("text")
-            .attr("x", width - marginRight)
-            .attr("y", 25)
-            .attr("fill", "currentColor")
-            .attr("text-anchor", "end")
-            .text("Temps"));
-
-    svg.append("g")
-        .attr("transform", `translate(${marginLeft},0)`)
-        .call(d3.axisLeft(y))
-        .call(g => g.select(".domain").remove())
-        .call(g => g.append("text")
-            .attr("x", -marginLeft)
-            .attr("y", 10)
-            .attr("fill", "currentColor")
-            .attr("text-anchor", "start")
-            .text("Niveau de nappe (m)"));
-
-    const line = d3.line()
-        .defined(d => d.niveauNappe !== null)
-        .x(d => x(d.date))
-        .y(d => y(d.niveauNappe));
-
-    const path = svg.append("g")
-        .attr("fill", "none")
-        .attr("stroke-width", 1.5)
-        .attr("stroke-linejoin", "round")
-        .attr("stroke-linecap", "round")
-        .selectAll("path")
-        .data(data)
-        .join("path")
-        .attr("stroke", "steelblue")
-        .attr("d", d => line(d.values))
-        .style("mix-blend-mode", "multiply");
-
-    const dot = svg.append("g").attr("display", "none");
-
-    dot.append("circle").attr("r", 4);
-    dot.append("text").attr("text-anchor", "middle").attr("y", -10);
-
-    svg.on("pointerenter", pointerentered)
-        .on("pointermove", pointermoved)
-        .on("pointerleave", pointerleft)
-        .on("touchstart", event => event.preventDefault());
-
-    function pointermoved(event) {
-        const [xm, ym] = d3.pointer(event);
-        const closest = data.flatMap(d => d.values.map(v => ({ ...v, stationName: d.name })))
-            .filter(d => d.niveauNappe !== null)
-            .reduce((a, b) => {
-                const distA = Math.hypot(x(a.date) - xm, y(a.niveauNappe) - ym);
-                const distB = Math.hypot(x(b.date) - xm, y(b.niveauNappe) - ym);
-                return distA < distB ? a : b;
-            });
-
-        const station = stations.find(s => s.codeBSS === closest.stationName);
-        const xPos = x(closest.date);
-        const yPos = y(closest.niveauNappe);
-
-        path.style("stroke", d => d.name === closest.stationName ? "steelblue" : "#ddd");
-        dot.attr("transform", `translate(${xPos},${yPos})`);
-        dot.select("text").text(
-            `${station.commune || "Commune inconnue"} (${station.codeBSS})\n${closest.niveauNappe.toFixed(2)} m`
-        );
-        dot.attr("display", null);
-    }
-
-    function pointerentered() {
-        path.style("stroke", "#ddd");
-        dot.attr("display", null);
-    }
-
-    function pointerleft() {
-        path.style("stroke", "steelblue");
-        dot.attr("display", "none");
-    }
-
-    return svg.node();
-}
-
-
-/**
  * @function createNormalizedChart
  * Crée un graphique normalisé des niveaux de nappe pour toutes les stations
  */
@@ -157,10 +22,10 @@ export function createNormalizedChart() {
 
     const width = panelWidth;
     const height = panelHeight;
-    const marginTop = 20;
-    const marginRight = 40;
-    const marginBottom = 30;
-    const marginLeft = 40;
+    const marginTop = 60;
+    const marginRight = 60;
+    const marginBottom = 60;
+    const marginLeft = 80;
 
     const parseDate = d3.timeParse("%d-%m-%Y");
     const formatDate = d3.timeFormat("%d-%m-%Y");
@@ -168,7 +33,6 @@ export function createNormalizedChart() {
     const allDates = getAllDates(stations);
     const parsedAllDates = allDates.map(parseDate);
 
-    // Reformat des données normalisées
     const series = stations.map(station => {
         const values = parsedAllDates.map(date => {
             const formatted = formatDate(date);
@@ -225,6 +89,31 @@ export function createNormalizedChart() {
             .attr("x2", width - marginLeft - marginRight))
         .call(g => g.select(".domain").remove());
 
+    svg.append("text")
+        .attr("x", width - marginRight)
+        .attr("y", height - 15)
+        .attr("text-anchor", "end")
+        .attr("fill", "currentColor")
+        .attr("font-size", "16px")
+        .text("Temps");
+
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", - marginTop)
+        .attr("y", 20)
+        .attr("text-anchor", "end")
+        .attr("fill", "currentColor")
+        .attr("font-size", "16px")
+        .text("Niveau de nappe normalisé");
+
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", marginTop - 20)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "20px")
+        .attr("font-weight", "bold")
+        .text("Évolution normalisée des niveaux de nappe");
+
     const rule = svg.append("g")
         .append("line")
         .attr("y1", height)
@@ -266,15 +155,14 @@ export function createNormalizedChart() {
 
         serie.attr("transform", ({ values }) => {
             const i = bisect(values, date);
-            const d0 = values[i - 1];
-            const d1 = values[i];
-            const closest = !d1 ? d0 : (date - d0.date < d1.date - date ? d0 : d1);
-            const ratio = closest ? closest.value / values[0].value : 1;
+            const d0 = values[i - 1] || values[0];
+            const d1 = values[i] || values[values.length - 1];
+            const closest = !d1 || !d0 ? d0 || d1 : (Math.abs(date - d0.date) < Math.abs(d1.date - date) ? d0 : d1);
+            const ratio = closest && values[0] ? closest.value / values[0].value : 1;
             return `translate(0,${y(1) - y(ratio)})`;
         });
     }
 
-    // Animation d’intro
     d3.transition()
         .ease(d3.easeCubicOut)
         .duration(1500)

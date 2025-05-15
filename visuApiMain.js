@@ -7,7 +7,8 @@
 import { fetchStationsData, departementStationsInformations, invertDate, getCoordsAndAvg, stationsData, dateDebut, dateFin } from './modules_visu_tube/data.js';
 import { registerPolygonComponent, highlightSerieByCodeBSS, rotatePolygonToFaceCamera } from './modules_visu_tube/visualisation.js';
 import { generateMap } from './modules_visu_tube/map.js';
-import { createMultiLineChart, createNormalizedChart } from './modules_visu_tube/graphs.js';
+// import { createMultiLineChart, createNormalizedChart } from './modules_visu_tube/graphs.js';
+import { createNormalizedChart } from './modules_visu_tube/graphs.js';
 
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('search');
@@ -24,9 +25,17 @@ const radialStackedChartSection = document.getElementById('radialStackedChartSec
 // Initialisation de l'interface
 baseInfosPanel.innerHTML = `
     <h1>${stationsData.departement}</h1>
-    <h3><span class='bold'>Intervalle de temps:</span> ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)}</h3>
-    <button id='visuGraphique' class='visuGraphique'>Visualisation graphique</button>
+    <h3>Intervalle de temps: ${invertDate(stationsData.dateDebut)} - ${invertDate(stationsData.dateFin)}</h3>
+    <button id='visuGraphique' class='visuGraphique'>Visualisation graphique normalisée</button>
+    <hr/>
+    <p><span class='bold'>Ordre de visualisation 3D</span></p>
+    <select id="ordre" name="ordre" class="select">
+		<option value="distances"> Distances entre stations</option>
+		<option value="mesures"> Mesures des nappes </option>
+	</select>
 `;
+
+const ordreSelect = document.getElementById('ordre');
 
 // Enregistrement du composant A-Frame
 registerPolygonComponent();
@@ -77,25 +86,27 @@ function searchStation() {
 }
 
 document.getElementById('visuGraphique').addEventListener('click', function () {
-    overlay.style.display = 'block';
+    overlay.classList.toggle('active');
     graphiquePanel.classList.toggle('active');
     
-    const multiLineChart = createMultiLineChart();
-    multiLineChartSection.innerHTML = '';
-    multiLineChartSection.appendChild(multiLineChart);
+    // const multiLineChart = createMultiLineChart();
+    // multiLineChartSection.innerHTML = '';
+    // multiLineChartSection.appendChild(multiLineChart);
     
     const normalizedChart = createNormalizedChart();
-    console.log("Normalized Chart");
     normalizedChartSection.innerHTML = '';
     normalizedChartSection.appendChild(normalizedChart);
     
 });
 
 overlay.addEventListener('click', function () {
-    overlay.style.display = 'none';
-    graphiquePanel.style.display = 'none';
+    overlay.classList.toggle('active');
     graphiquePanel.classList.toggle('active');
 });
 
+ordreSelect.addEventListener('change', function () {
+    fetchStationsData(dateDebut, dateFin)
+});
+
 // Variables globales exportées
-export { infoPanel, graphiquePanel };
+export { infoPanel, graphiquePanel, ordreSelect };
