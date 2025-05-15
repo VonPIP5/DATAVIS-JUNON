@@ -123,7 +123,7 @@ boutonPeriodeSpecifique.addEventListener("click", () => {
 // ------------------------- Fin de bouton pour la visualisation 3D en colonne/tube -------------------------
 
 // ________________________       MAPS        _______________________________
-window.open3DView = function(codeBss) {
+window.open3DView = async function(codeBss) {
     //Trouver le marker correspondant
     let targetMarker;
     map.eachLayer(layer => {
@@ -155,6 +155,7 @@ window.open3DView = function(codeBss) {
     const visualizationData = {
         waterLevels: [],
         stationInfo: {
+            departementCode: selectDepartement.value,
             codeBss: targetMarker.info.code_bss,
             commune: targetMarker.info.nom_commune,
             departement: targetMarker.info.nom_departement,
@@ -166,8 +167,40 @@ window.open3DView = function(codeBss) {
         },
         meteoData: null,
         statistics: null,
-        chartData: null
+        chartData: null,
+        infoPourAlgo: []
     };
+
+    // Récupérer les informations pour l'algorithme
+    try {
+        // Utiliser la période sélectionnée pour filtrer les stations avec données sur la période
+        const urlDepartementStations = `${listeStations}?code_departement=${selectDepartement.value}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+        const urlChroniquesStationsfiltre =`${listeCPiezometriques}?code_bss=${bssActuelFiltre}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
+        const response = await fetch(urlDepartementStations);
+        const reponsefiltre = await fetch(urlChroniquesStationsfiltre);
+        const data = await response.json();
+        const datafiltre = await reponsefiltre.json();
+        console.log("data", data);
+        console.log("datafiltre", datafiltre);
+
+        if (data.data && data.data.length > 0) {
+        data.data.forEach(element => {
+            if (datafiltre.data && datafiltre.data.length > 0) {
+            visualizationData.infoPourAlgo = data.data.map(station => ({
+                BSS: station.code_bss,
+                longitude: station.x,
+                latitude: station.y
+            }));
+        }
+        }); 
+    }
+}
+    catch (error) {
+        console.error("Erreur lors de la récupération des informations pour l'algorithme :", error);
+    };
+    
+   
+
 
     //Récupérer les données du graphique
     try {
@@ -739,6 +772,8 @@ function markerCouleurViolet(info1erUrl, tousLesMarkers) {
 
     marker.addEventListener("click", () => {
         afficheForYou(info1erUrl.code_bss);
+
+    console.log(data.data)
     });
 }
 
