@@ -3,27 +3,34 @@
 
 <head>
     <meta charset="UTF-8" />
-    <link rel="stylesheet" type="text/css" href="3dvisu.css" />
+    <link rel="stylesheet" href="scss/visu.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <title>Visualisation 3D</title>
 </head>
 
 <body>
+    <div class="overlay" id="overlay"></div>
+
     <a-scene>
-        <a-camera id="camera" position="0 2.5 6">
+        <a-camera id="camera" position="0 2.5 7">
             <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
         </a-camera>
         <a-entity id="cursor" cursor="rayOrigin: mouse" raycaster="objects: [click-listener]"></a-entity>
-        <a-entity polygon="sides: 3; depth: 1" position="0 0 0"></a-entity>
-        <a-sky id='sky' color="#74a8a0"></a-sky>
+        <a-entity polygon="sides: 3; depth: 1" position="0 0 0" rotation="0 -84.270 0"></a-entity>
+        <a-sky id='sky' color="#191919"></a-sky>
     </a-scene>
 
     <section class='parent-panel-base'>
         <div class="base-infos-panel" id="baseInfosPanel"></div>
     </section>
+
     <section class='parent-panel-info'>
         <div class="info-panel" id="infoPanel"></div>
     </section>
+
     <section class='parent-panel-info'>
         <div class="search-panel" id="infoPanel">
             <h2>Rechercher une station</h2>
@@ -32,12 +39,24 @@
             <button id="reset" class="reset">Réinitialiser</button>
         </div>
     </section>
+
     <section class='parent-panel-info'>
         <div class="map-panel" id="mapPanel"></div>
+        <div class="coordinates-panel" id="coordinatesPanel"></div>
     </section>
 
-    <!-- <script src="visu.js"></script> -->
-    <script src="visuAPI.js"></script>
+    <section class='parent-panel-info'>
+        <div class="graphique-panel" id="graphiquePanel">
+            <!-- <div class="multi-line-chart" id="multiLineChartSection"></div> -->
+            <div class="normalized-chart" id="normalizedChartSection"></div>
+            <!-- <div class="radial-stacked-chart" id="radialStackedChartSection"></div> -->
+        </div>
+    </section>
+
+    <!-- <script src="visuAPISortAlt.js"></script> -->
+    <!-- <script src="visuAPI.js"></script> -->
+    <script src="visuApiMain.js" type="module"></script>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </body>
