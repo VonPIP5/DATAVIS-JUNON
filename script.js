@@ -123,7 +123,7 @@ boutonPeriodeSpecifique.addEventListener("click", () => {
 // ------------------------- Fin de bouton pour la visualisation 3D en colonne/tube -------------------------
 
 // ________________________       MAPS        _______________________________
-window.open3DView = async function (codeBss) {
+window.open3DView = async function(codeBss) {
     //Trouver le marker correspondant
     let targetMarker;
     map.eachLayer(layer => {
@@ -172,88 +172,88 @@ window.open3DView = async function (codeBss) {
     };
 
     // Récupérer les informations pour l'algorithme
-    // try {
-    //     // Utiliser la période sélectionnée pour filtrer les stations avec données sur la période
-    //     const urlDepartementStations = `${listeStations}?code_departement=${selectDepartement.value}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
-    //     const urlChroniquesStationsfiltre = `${listeCPiezometriques}?code_bss=${bssActuelFiltre}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
-    //     const response = await fetch(urlDepartementStations);
-    //     const reponsefiltre = await fetch(urlChroniquesStationsfiltre);
-    //     const data = await response.json();
-    //     const datafiltre = await reponsefiltre.json();
-    //     console.log("data", data);
-    //     console.log("datafiltre", datafiltre);
-
-    //     if (data.data && data.data.length > 0) {
-    //         data.data.forEach(element => {
-    //             if (datafiltre.data && datafiltre.data.length > 0) {
-    //                 visualizationData.infoPourAlgo = data.data.map(station => ({
-    //                     BSS: station.code_bss,
-    //                     longitude: station.x,
-    //                     latitude: station.y
-    //                 }));
-    //             }
-    //         });
-    //     }
-    // }
-
     try {
-        // Utiliser la période sélectionnée pour filtrer les stations avec données sur la période
         const urlDepartementStations = `${listeStations}?code_departement=${selectDepartement.value}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
         const response = await fetch(urlDepartementStations);
         const data = await response.json();
 
-        if (data.data.length > 0) {
-            const codeBSS = data.data.map(station => station.code_bss);
+        if (data.data && data.data.length > 0) {
+            const stationsWithWaterLevel = [];
+            for (const station of data.data) {
+                // Vérification du format des dates (doivent être YYYY-MM-DD)
+                let dDebut = dateDebut;
+                let dFin = dateFin;
+                if (/^\d{2}-\d{2}-\d{4}$/.test(dateDebut)) {
+                    const [day, month, year] = dateDebut.split('-');
+                    dDebut = `${year}-${month}-${day}`;
+                }
+                if (/^\d{2}-\d{2}-\d{4}$/.test(dateFin)) {
+                    const [day, month, year] = dateFin.split('-');
+                    dFin = `${year}-${month}-${day}`;
+                }
+                const urlChroniques = `${listeCPiezometriques}?code_bss=${station.code_bss}&date_debut_mesure=${dDebut}&date_fin_mesure=${dFin}`;
+                try {
+                    const res = await fetch(urlChroniques);
+                    const chroniques = await res.json();
+                    console.log("Test station", station.code_bss, urlChroniques, "Résultat:", chroniques.data ? chroniques.data.length : 0);
+                    if (chroniques && Array.isArray(chroniques.data) && chroniques.data.length > 0) {
+                        // Calcul statistiques pour chaque station
+                        const values = chroniques.data.map(item => item.niveau_nappe_eau).sort((a, b) => a - b);
+                        let median = null, q1 = null, q3 = null, min = null, max = null;
+                        if (values.length > 0) {
+                            min = values[0];
+                            max = values[values.length - 1];
+                            const percentile = (arr, p) => {
+                                const idx = (p / 100) * (arr.length - 1);
+                                if (Math.floor(idx) === idx) return arr[idx];
+                                const i = Math.floor(idx);
+                                return arr[i] + (arr[i + 1] - arr[i]) * (idx - i);
+                            };
+                            median = percentile(values, 50);
+                            q1 = percentile(values, 25);
+                            q3 = percentile(values, 75);
+                        }
+                        stationsWithWaterLevel.push({
+                            BSS: station.code_bss,
+                            longitude: station.x,
+                            latitude: station.y,
+                            commune: station.nom_commune,
+                            departement: station.nom_departement,
+                            altitude: station.altitude_station,
+                            profondeurInv: station.profondeur_investigation,
+                            statistics: {
+                                median, q1, q3, min, max
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Erreur fetch chroniques pour", station.code_bss, e);
+                }
+            }
+            visualizationData.infoPourAlgo = stationsWithWaterLevel;
+            console.log("Stations avec mesures de niveau d'eau:", stationsWithWaterLevel.length, stationsWithWaterLevel);
+        } else {
+            visualizationData.infoPourAlgo = [];
+            console.log("Aucune station trouvée pour ce département/période.");
         }
-
-        const urlChroniquesStationsFiltre = `${listeCPiezometriques}?code_bss=${codeBSS}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`;
-        const reponseFiltre = await fetch(urlChroniquesStationsFiltre);
-        const dataFiltre = await reponseFiltre.json();
-
-        // console.log("data", data);
-        // console.log("datafiltre", datafiltre);
-
-        // if (data.data && data.data.length > 0) {
-        //     data.data.forEach(element => {
-        //         if (datafiltre.data && datafiltre.data.length > 0) {
-        //             visualizationData.infoPourAlgo = data.data.map(station => ({
-        //                 BSS: station.code_bss,
-        //                 longitude: station.x,
-        //                 latitude: station.y
-        //             }));
-        //         }
-        //     });
-        // }
-
-        if (dataFiltre.data.length > 0) {
-            visualizationData.infoPourAlgo.push =({
-                BSS: station.code_bss,
-                longitude: station.x,
-                latitude: station.y
-            })
-        }
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Erreur lors de la récupération des informations pour l'algorithme :", error);
-    };
-
-
-
+    }
 
     //Récupérer les données du graphique
     try {
         const chartId = 'myChartNiveau' + codeBss;
         const chart = Chart.getChart(chartId);
-
+        
         if (chart && chart.data) {
             visualizationData.waterLevels = chart.data.datasets[0].data
                 .map((point, index) => ({
                     value: typeof point === 'object' ? point.value : point,
                     date: chart.data.labels[index] || `${index + 1}/${new Date().getFullYear()}`
                 }));
-
-            visualizationData.lastMeasurement = visualizationData.waterLevels.length > 0
-                ? visualizationData.waterLevels[visualizationData.waterLevels.length - 1].value
+            
+            visualizationData.lastMeasurement = visualizationData.waterLevels.length > 0 
+                ? visualizationData.waterLevels[visualizationData.waterLevels.length - 1].value 
                 : null;
 
             //Sauvegarder les données du graphique pour la reconstruction
@@ -312,7 +312,7 @@ window.open3DView = async function (codeBss) {
     try {
         console.log("Données envoyées à la 3D:", visualizationData);
         sessionStorage.setItem('waterData', JSON.stringify(visualizationData));
-
+        
         const newWindow = window.open('versiontest copy.html', '_blank');
         if (!newWindow) {
             alert("Veuillez autoriser les popups pour cette fonctionnalité");
@@ -810,8 +810,6 @@ function markerCouleurViolet(info1erUrl, tousLesMarkers) {
 
     marker.addEventListener("click", () => {
         afficheForYou(info1erUrl.code_bss);
-
-        console.log(data.data)
     });
 }
 
@@ -992,7 +990,7 @@ function afficheResultatComplet(infos, url1StationLCP, dataPoints, url1StationLC
         })
         .then(data => {
             let tabJustDate = []
-
+        
             if (data.count == 0) {
                 let resultat0 = document.createElement("p")
                 resultat0.classList.add("col-6")
@@ -1771,16 +1769,16 @@ function graphNiveauDeau(dataPoints, codeBSS, divNiveauEauGraph, buttonInfoStati
 
     let dateFinDataPoints = dataPoints[dataPoints.length - 1]
     if (dateFinDataPoints.value <= result.q1Ancien) {
-        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurRouge"></div></div> `
+        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurRouge"></div> </div> `
     }
     else if (dateFinDataPoints.value <= result.medianeAncien) {
-        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurOrange"></div></div> `
+        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurOrange"></div> </div> `
     }
     else if (dateFinDataPoints.value <= result.q3Ancien) {
-        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurJaune"></div></div> `
+        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurJaune"></div> </div> `
     }
     else if (dateFinDataPoints.value > result.q3Ancien) {
-        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurVert"></div></div> `
+        buttonInfoStation.innerHTML += `<div class="defDesCouleurs">Score du niveau d'eau :   <div class="couleurVert"></div> </div> `
     }
     else {
         buttonInfoStation.innerHTML += "pas assez de donnée pour faire le calcul"
@@ -1834,7 +1832,7 @@ function explicationScore(score) {
 function graphNiveauDeauTR(tabDataTR, codeBss, div3erGraphique, result, lien2Graph1, lien2Graph2) {
     const labels = [];
     const values = [];
-    if (codeBss == "04307X0001/P1") { console.log(codeBss, tabDataTR); };
+
     let tableauCroissant = []
 
     let tabDataTRChrono = tabDataTR.reverse()

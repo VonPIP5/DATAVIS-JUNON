@@ -342,6 +342,9 @@
         statistics: null
     };
 
+    let stations = [];
+    let currentStationIndex = 0;
+
     // Fonction pour convertir le format de date DD-MM-YYYY en YYYY-MM-DD
     function convertToAPIDateFormat(dateStr) {
         const [day, month, year] = dateStr.split('-');
@@ -353,27 +356,66 @@
         return content.replace(/<br>/g, '\n');
     }
 
+    // Fonction utilitaire pour fetch avec retry
+    async function fetchWithRetry(url, options = {}, maxAttempts = 2) {
+        let lastError;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (err) {
+                lastError = err;
+                if (attempt === maxAttempts) {
+                    console.error(`Erreur lors de l'appel API (${url}) après ${maxAttempts} tentatives :`, err);
+                }
+            }
+        }
+        return null;
+    }
+
+    // Fonction utilitaire pour fetch avec retry et gestion du 429 (Too Many Requests)
+    async function fetchWithRetry(url, options = {}, maxAttempts = 2, delayMs = 1000) {
+        let lastError;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const response = await fetch(url, options);
+                if (response.status === 429) {
+                    // Trop de requêtes, attendre avant de réessayer
+                    if (attempt < maxAttempts) {
+                        console.warn(`API 429 Too Many Requests, tentative ${attempt}/${maxAttempts}, attente ${delayMs}ms...`);
+                        await new Promise(res => setTimeout(res, delayMs));
+                        continue;
+                    } else {
+                        throw new Error("Erreur 429: Trop de requêtes (Too Many Requests)");
+                    }
+                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (err) {
+                lastError = err;
+                if (attempt === maxAttempts) {
+                    console.error(`Erreur lors de l'appel API (${url}) après ${maxAttempts} tentatives :`, err);
+                }
+            }
+        }
+        return null;
+    }
+
     // Fonction pour récupérer les données de niveau d'eau
     async function fetchWaterLevels() {
         try {
             const dateDebutAPI = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
             const dateFinAPI = convertToAPIDateFormat(waterData.stationInfo.dateFin);
-            
-            const response = await fetch(
-                `${apiBaseUrl}/chroniques?code_bss=${waterData.stationInfo.codeBss}&date_debut_mesure=${dateDebutAPI}&date_fin_mesure=${dateFinAPI}`
-            );
-            const data = await response.json();
-            
-            if (data.data && data.data.length > 0) {
+            const url = `${apiBaseUrl}/chroniques?code_bss=${waterData.stationInfo.codeBss}&date_debut_mesure=${dateDebutAPI}&date_fin_mesure=${dateFinAPI}`;
+            const data = await fetchWithRetry(url);
+            if (data && data.data && data.data.length > 0) {
                 waterData.waterLevels = data.data.map(item => ({
                     value: item.niveau_nappe_eau,
                     date: new Date(item.date_mesure).toLocaleDateString(),
                     profondeur: item.profondeur_nappe
                 }));
-                
                 waterData.lastMeasurement = waterData.waterLevels[waterData.waterLevels.length - 1];
-                
-                // Calcul des statistiques
                 calculateStatistics();
             }
         } catch (error) {
@@ -387,20 +429,16 @@
             const { lat, lng } = waterData.stationInfo.coordinates;
             const dateDebutAPI = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
             const dateFinAPI = convertToAPIDateFormat(waterData.stationInfo.dateFin);
-            
             const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${dateDebutAPI}&end_date=${dateFinAPI}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code`;
-            
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            if (data.daily) {
+            const data = await fetchWithRetry(url, {}, 2, 2000); // 2 tentatives, 2s d'attente si 429
+            if (data && data.daily) {
                 waterData.meteoData = {
                     tempMax: data.daily.temperature_2m_max,
                     tempMin: data.daily.temperature_2m_min,
                     precipitation: data.daily.precipitation_sum,
                     weatherCode: data.daily.weather_code,
-                    dates: data.daily.time.map(date => new Date(date).toLocaleDateString()
-                )};
+                    dates: data.daily.time.map(date => new Date(date).toLocaleDateString())
+                };
             }
         } catch (error) {
             console.error("Erreur lors de la récupération des données météo:", error);
@@ -697,7 +735,76 @@
         return dx * dx + dy * dy;
     }
 
+    // Fonction pour calculer la distance euclidienne
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const dx = lon1 - lon2;
+        const dy = lat1 - lat2;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Fonction pour trier les stations par proximité à la station courante
+    function sortStationsByProximity(infoPourAlgo, selectedBss) {
+        const selectedStation = infoPourAlgo.find(st => st.BSS === selectedBss);
+        if (!selectedStation) return infoPourAlgo;
+        return infoPourAlgo
+            .map(st => ({
+                ...st,
+                distance: calculateDistance(selectedStation.latitude, selectedStation.longitude, st.latitude, st.longitude)
+            }))
+            .sort((a, b) => a.distance - b.distance);
+    }
+
+    // Fonction pour charger les données d'une station par code BSS
+    async function loadStationDataByBss(codeBss) {
+        const stationInfo = stations.find(st => st.BSS === codeBss);
+        if (!stationInfo) return;
+
+        // Mettre à jour stationInfo dans waterData
+        waterData.stationInfo.codeBss = stationInfo.BSS;
+        waterData.stationInfo.coordinates = { lat: stationInfo.latitude, lng: stationInfo.longitude };
+        if (stationInfo.commune) waterData.stationInfo.commune = stationInfo.commune;
+        if (stationInfo.departement) waterData.stationInfo.departement = stationInfo.departement;
+        if (stationInfo.altitude) waterData.stationInfo.altitude = stationInfo.altitude;
+        if (stationInfo.profondeurInv) waterData.stationInfo.profondeurInv = stationInfo.profondeurInv;
+
+        // Reset data before fetching
+        waterData.waterLevels = [];
+        waterData.lastMeasurement = null;
+        waterData.meteoData = null;
+        waterData.statistics = null;
+
+        // Récupérer les données
+        await fetchWaterLevels();
+        await fetchMeteoData();
+        calculateStatistics();
+
+        // Mettre à jour les panneaux et l'eau
+        updatePanels();
+        setupWater();
+        createChart();
+
+        // Stocker TOUTES les données à jour dans le sessionStorage (après update)
+        sessionStorage.setItem('waterData', JSON.stringify({
+            ...waterData,
+            infoPourAlgo: stations
+        }));
+
+        // Réinitialiser la position de la caméra à la position initiale
+        const camera = document.querySelector('#camera');
+        if (camera) {
+            camera.setAttribute('position', { x: 0, y: 1, z: 4.5 });
+            camera.setAttribute('rotation', { x: 0, y: 180, z: 0 });
+        }
+    }
+
+    // Pour éviter les changements multiples, on bloque la transition tant qu'un chargement est en cours
+    let isTransitioning = false;
+
     function handleDoorTransition(isBackDoor) {
+        if (isTransitioning) return;
+        isTransitioning = true;
+
+        // Créer l'overlay noir sans texte
         const fadeOverlay = document.createElement('div');
         fadeOverlay.style.position = 'absolute';
         fadeOverlay.style.top = '0';
@@ -707,37 +814,41 @@
         fadeOverlay.style.backgroundColor = 'black';
         fadeOverlay.style.opacity = '0';
         fadeOverlay.style.transition = 'opacity 0.5s';
+        fadeOverlay.style.zIndex = '9999';
         document.body.appendChild(fadeOverlay);
+
+        // Bloquer les déplacements
+        const camera = document.querySelector('#camera');
+        if (camera) {
+            camera.setAttribute('wasd-controls', 'enabled: false; acceleration: 0');
+        }
 
         fadeOverlay.style.opacity = '1';
         setTimeout(async () => {
-            currentStationIndex = isBackDoor
-                ? (currentStationIndex === 0 ? stations.length - 1 : currentStationIndex - 1)
-                : (currentStationIndex === stations.length - 1 ? 0 : currentStationIndex + 1);
-
+            const prevIndex = currentStationIndex;
+            if (isBackDoor) {
+                currentStationIndex = (currentStationIndex === 0) ? stations.length - 1 : currentStationIndex - 1;
+            } else {
+                currentStationIndex = (currentStationIndex === stations.length - 1) ? 0 : currentStationIndex + 1;
+            }
+            const nextIndex = currentStationIndex;
             const nextStation = stations[currentStationIndex];
-            const dateDebut = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
-            const dateFin = convertToAPIDateFormat(waterData.stationInfo.dateFin);
+            // Enregistrer l'index courant dans le localStorage pour persistance
+            localStorage.setItem('currentStationIndex', currentStationIndex);
+            console.log(`Changement de ville : index actuel = ${prevIndex}, prochain index = ${nextIndex}`);
+            await loadStationDataByBss(nextStation.BSS);
 
-            await fetchNextStationData(nextStation.codeBss, dateDebut, dateFin);
+            // Débloquer les déplacements (remettre la valeur par défaut)
+            if (camera) {
+                camera.setAttribute('wasd-controls', 'enabled: true; acceleration: 25');
+            }
 
             fadeOverlay.style.opacity = '0';
-            setTimeout(() => document.body.removeChild(fadeOverlay), 500);
+            setTimeout(() => {
+                document.body.removeChild(fadeOverlay);
+                isTransitioning = false;
+            }, 500);
         }, 500);
-    }
-
-    async function fetchNextStationData(codeBss, dateDebut, dateFin) {
-        try {
-            const response = await fetch(`${apiBaseUrl}/chroniques?code_bss=${codeBss}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`);
-            const data = await response.json();
-
-            if (data.data && data.data.length > 0) {
-                const station = stations.find(station => station.codeBss === codeBss);
-                updateCityData(station);
-            }
-        } catch (error) {
-            console.error("Erreur lors de la récupération des données de la station suivante:", error);
-        }
     }
 
     function checkDoorCollision(cameraPosition) {
@@ -765,73 +876,37 @@
     });
 
     document.addEventListener('DOMContentLoaded', async function () {
-        const regionCode = sessionStorage.getItem('selectedRegion');
-        const selectedCityCodeBss = sessionStorage.getItem('selectedCityCodeBss');
-        const dateDebut = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
-        const dateFin = convertToAPIDateFormat(waterData.stationInfo.dateFin);
-
-        // Récupérer et trier les stations dès le début
-        await fetchStations(regionCode, dateDebut, dateFin, selectedCityCodeBss);
-
-        const camera = document.querySelector('#camera');
-        camera.setAttribute('check-doors', '');
-    });
-
-    document.addEventListener('DOMContentLoaded', async function () {
-        const selectedCity = waterData.stationInfo.commune;
+        // Utiliser infoPourAlgo pour la navigation
         const infoPourAlgo = stationData.infoPourAlgo;
+        const selectedBss = stationData.stationInfo.codeBss;
 
-        // Fonction pour calculer la distance euclidienne
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const dx = lon1 - lon2;
-            const dy = lat1 - lat2;
-            return Math.sqrt(dx * dx + dy * dy);
-        }
+        // Ajout : stocker toutes les infos nécessaires pour chaque station (commune, altitude, stats, etc.)
+        stations = infoPourAlgo.map(st => ({
+            BSS: st.BSS,
+            longitude: st.longitude,
+            latitude: st.latitude,
+            commune: st.commune,
+            departement: st.departement,
+            altitude: st.altitude,
+            profondeurInv: st.profondeurInv,
+            statistics: st.statistics // {median, q1, q3, min, max}
+        }));
 
-        // Fonction pour trier les villes par proximité
-        function sortCitiesByProximity(infoPourAlgo, selectedCity) {
-            const selectedCityInfo = infoPourAlgo.find(city => city.commune === selectedCity);
-            if (!selectedCityInfo) {
-                console.error("Ville sélectionnée introuvable dans les données.");
-                return [];
-            }
+        // Supprimer les doublons éventuels (par BSS)
+        stations = stations.filter((st, idx, arr) =>
+            arr.findIndex(s2 => s2.BSS === st.BSS) === idx
+        );
 
-            const { latitude: selectedLat, longitude: selectedLon } = selectedCityInfo;
+        stations = sortStationsByProximity(stations, selectedBss);
 
-            return infoPourAlgo
-                .map(city => ({
-                    ...city,
-                    distance: calculateDistance(selectedLat, selectedLon, city.latitude, city.longitude)
-                }))
-                .sort((a, b) => a.distance - b.distance);
-        }
+        // Toujours démarrer à l'index 0 après un rafraîchissement
+        currentStationIndex = 0;
 
-        // Exécuter l'algorithme et stocker le nouvel ordre
-        const sortedCities = sortCitiesByProximity(infoPourAlgo, selectedCity);
-        waterData.sortedCities = sortedCities;
+        await loadStationDataByBss(stations[currentStationIndex].BSS);
 
-        // Mettre à jour le sessionStorage
-        sessionStorage.setItem('waterData', JSON.stringify(waterData));
-
-        // Charger les stations et configurer la caméra
+        // Activer la détection des portes
         const camera = document.querySelector('#camera');
         camera.setAttribute('check-doors', '');
-    });
-
-    // Chargement initial
-    document.addEventListener('DOMContentLoaded', async function () {
-        try {
-            await Promise.all([
-                fetchWaterLevels(),
-                fetchMeteoData()
-            ]);
-            
-            updatePanels();
-            setupWater();
-            createChart();
-        } catch (error) {
-            console.error("Erreur lors du chargement des données:", error);
-        }
     });
 </script>
 </body>
