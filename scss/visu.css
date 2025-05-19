@@ -1,5 +1,4 @@
 @charset "UTF-8";
-
 /**
  * 3dvisu version SCSS
  */
@@ -20,11 +19,9 @@
   background: rgba(0, 0, 0, 0.6);
   display: none;
 }
-
 .overlay.active {
   display: block;
 }
-
 
 /**
 * Style du panel qui affiche les graphiques
@@ -38,24 +35,15 @@
   z-index: 1000;
   top: 5%;
   left: 5%;
-  width: 90vw;
-  height: 90vh;
+  width: 80vw;
+  height: 80vh;
   background: white;
   display: none;
-  /* -ms-grid-columns: (1fr)[2];
-  grid-template-columns: repeat(2, 1fr);
-  -ms-grid-rows: (1fr)[2];
-  grid-template-rows: repeat(2, 1fr);
-  gap: 10px; */
   overflow: hidden;
 }
-
 .graphique-panel.active {
-  /* display: -ms-grid;
-  display: grid; */
   display: block;
 }
-
 .graphique-panel .multi-line-chart,
 .graphique-panel .normalized-chart,
 .graphique-panel .radial-stacked-chart {
@@ -66,27 +54,17 @@
   overflow: hidden;
   background: white;
 }
-
 .graphique-panel .multi-line-chart {
-  -ms-grid-column: 1;
   grid-column: 1;
-  -ms-grid-row: 1;
   grid-row: 1;
 }
-
 .graphique-panel .normalized-chart {
-  -ms-grid-column: 1;
   grid-column: 1;
-  -ms-grid-row: 2;
   grid-row: 2;
 }
-
 .graphique-panel .radial-stacked-chart {
-  -ms-grid-column: 2;
   grid-column: 2;
-  -ms-grid-row: 1;
-  -ms-grid-row-span: 2;
-  grid-row: 1 / span 2;
+  grid-row: 1/span 2;
 }
 
 /**
@@ -115,7 +93,6 @@
   right: 20px;
   max-width: 300px;
 }
-
 .search-panel .searchInput {
   width: 80%;
   padding: 5px;
@@ -180,17 +157,13 @@
   font-size: 12px;
   line-height: 1.4;
   border-radius: 5px;
-  -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   color: #333;
   max-width: 150px;
 }
-
 .leaflet-control.legend img.imgLegendeMap {
   width: 12px;
   height: 20px;
   vertical-align: middle;
   margin-right: 6px;
-}
-
-/*# sourceMappingURL=visu.css.map */
+}/*# sourceMappingURL=visu.css.map */
