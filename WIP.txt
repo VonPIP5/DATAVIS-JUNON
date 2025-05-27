@@ -2,3 +2,37 @@ penser à changer le lien git pour la font si le projet doit être mis autre par
 peut-être faire des environnements en fonction des sècheresse ou non (le représenter peut-être avec un endroit qui ressemble à un hologram qui tourne sur lui même avec un desert si il manque, ou un sol qui éclaire une fleur si on est bon)
 faire une carte en vu isométrique avec les tubes
 faire plusieurs modes de vus pour schéma piézomètre : le mode aquarium où celui par défaut où l'eau est totalement en surface, le mode bassin où le reste de l'altitude n'est pas montré, la hauteur s'arrête à la fin de la hauteur du piézomètre et on ne va pas jusqu'au niveau de la mère (la variable altitude), et enfin le mode piscine où le schéma 3d est totalement submergé sous le sol et dont on peut voir la valeur.
+
+Les choses à récupérer :
+
+Affichage 1 =
+Nom ville, Département (code BSS) 
+Date de mesure
+Code commune
+
+Affichage 2 = 
+Altitude
+Coordonnées
+Profondeur nappe
+Pronfondeur investigation
+Nom masse eau (si disponible)
+
+Affichage 3 =
+Température
+humidité 
+condition météorologique
+
+Affichage 4 =
+Médiane actuelle
+Q1 actuel
+Q3 actuel
+Médiane historique
+Q1 historique
+Q3 historique
+
+Affichage 5 = 
+Graphique
+
+Porte qui permettent de changer le code bss avec la ville la plus proche déterminé par l'algorithme de lucas 
+et faire l'appel d'api pour les nouvelles données lorsqu'on la traverse avec un fondu au noir comme transition
+rajoute deux portes faites par un <a plane> noir, une sur le mur de derrière et une sur le mur avant droit et fait en sorte que celle de derrière permette d'aller à la ville en dernière position dans l'algorithmesi c'est la première porte ou sinon tu envoies à la ville précédente et celle de devant permette d'aller à la ville suivante dans l'algorithme ou si c'est la dernière ville renvoie à la première, tout cela sera fait grace l'algorithme que je vais te fournir, il faudra que tu le modifie et l'adapte pour qu'il fonctionne dans mon code (cet algorithme fonctionne grâce au longitude et latitude des villes). Pour chaque changement de ville il faut que tu fasse en sorte de récupéré le code BSS de la ville actuelle dans laquelle se trouve l'utilisateur et s'il emprunte une des deux portes, les informations présentes dans la nouvelle ville dans laquelle l'utilisateur viens de rentrer doivent remplacer les informations de la ville précédentes (quand je dis information je parles de toutes les informations qui sont affichés pour l'utilisateur donc pas que le nom de la ville mais aussi météo, info sur nappe phréatique, etc tout ce se qui se trouve dans le a frame) il faut pour cela que tu fasses des appels d'api pour récupérés les nouvelles informations à affiché, ses appels se feront grâce aux dates fournis par l'utilisateur dans le fichier précédent (elles sont déjà fournis tu devras juste les exploiter) et le code BSS (fait en sorte de stocker tous les codes BSS et toutes les longitudes et lattitudes des villes de la région pour les mettres dans la matrice grâce un appel d'api en utilisant la région de la ville préselectionner dans l'autre fichier par l'utilisateur, pour qu'on puisse récupérer ses informations)

@@ -9,10 +9,14 @@
             margin: 0;
             overflow: hidden;
         }
+        #cursor {
+            pointer-events: none;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
-    <a-scene>
+    <a-scene physics="debug: false; gravity: 0">
         <!-- Mur -->
         <a-entity id="mur">
             <!-- Mur 1 (Face avant) -->
@@ -40,9 +44,15 @@
             material="src: ./textures/texture-mur.jpg; roughness: 1; metalness: 0; repeat: 3 1;"></a-plane>
         </a-entity>
         
+        <!-- Porte arrière -->
+        <a-plane id="backDoor" position="0 2.1 -5.1" rotation="0 0 0" width="2" height="4" color="black" class="interactive"></a-plane>
+        <!-- Porte avant -->
+        <a-plane id="frontRightDoor" position="0 2.1 5.1" rotation="0 180 0" width="2" height="4" color="black" class="interactive"></a-plane>
+
+
         <!-- Plafond -->
         <a-entity id="plafond">
-            <a-circle position="0 4.75 0" rotation="90 0 0" radius="7" 
+            <a-circle position="0 4.75 0" rotation="90 0 0" radius="7" static-body
                 material="src: ./textures/metal_black1k.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 3 3; emissive: #000000; emissiveIntensity: 3;">
             </a-circle>
             <a-entity id="lumNappesToit" light="type: spot; color: #FFFFFF; intensity: 0.9; castShadow: true; angle: 35; penumbra: 0.7" position="0 4.7 0" rotation="-90 0 0"></a-entity>
@@ -50,349 +60,989 @@
         </a-entity>
 
         <!-- Sol -->
-        <a-circle id="sol" position="0 0 0" radius="7" rotation="-90 0 0"
-            material="src: ./textures/test-sol.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 8 8;" static-body segments-radial="6">
+        <a-circle id="sol" position="0 0 0" radius="7" rotation="-90 0 0" static-body
+            material="src: ./textures/test-sol.jpg; color: #696969; roughness: 1; metalness: 0; repeat: 8 8;" segments-radial="6">
         </a-circle>
 
         <!-- Plinthes bas -->
         <a-entity id="plinthes-Bas">
             <!-- Face avant -->
-            <a-box position="0 0 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="0 0 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Avant-droite -->
-            <a-box position="4.5 0 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="4.5 0 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Arriere-droite -->
-            <a-box position="4.5 0 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="4.5 0 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Face arriere -->
-            <a-box position="0 0 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="0 0 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Arriere-gauche -->
-            <a-box position="-4.5 0 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="-4.5 0 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Avant-gauche -->
-            <a-box position="-4.5 0 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="-4.5 0 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         </a-entity>    
         
         <!-- Plinthes haut -->
         <a-entity id="plinthes-Haut">
             <!-- Face avant -->
-            <a-box position="0 4.75 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="0 4.75 -5.2" rotation="0 0 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Avant-droite -->
-            <a-box position="4.5 4.75 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="4.5 4.75 -2.6" rotation="0 -60 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Arriere-droite -->
-            <a-box position="4.5 4.75 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="4.5 4.75 2.6" rotation="0 -120 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Face arriere -->
-            <a-box position="0 4.75 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="0 4.75 5.2" rotation="0 180 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Arriere-gauche -->
-            <a-box position="-4.5 4.75 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="-4.5 4.75 2.6" rotation="0 120 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         
             <!-- Avant-gauche -->
-            <a-box position="-4.5 4.75 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" 
+            <a-box position="-4.5 4.75 -2.6" rotation="0 60 0" width="6.93" height="0.02" depth="0.1" static-body
             material="color: white; emissive: #0035ff ; emissiveIntensity: 0.6"></a-box>
         </a-entity>  
 
         <!-- profondeur terre -->
-        <a-entity geometry="primitive: cylinder; radius: 2.505; height: 3; segmentsRadial: 6"
+        <a-entity>
+            <a-entity geometry="primitive: cylinder; radius: 2.505; height: 0.01; segmentsRadial: 6"
+                id="grass"
+                material="color: #0ba133; emissive: #0ba133; emissiveIntensity: 0.3" 
+                position="0 1.51 0" rotation="180 30 0" shadow="cast:true; receive:true" static-body="shape: cylinder; cylinderRadius: 2.5; cylinderHeight: 3">
+            </a-entity>  
+            <a-entity geometry="primitive: cylinder; radius: 2.505; height: 3; segmentsRadial: 6"
                 id="water"
                 material="color: #692f0b; emissive: #692f0b; emissiveIntensity: 0.3" 
-                position="0 0 0" rotation="180 30 0" shadow="cast:true; receive:true" static-body>
+                position="0 0 0" rotation="180 30 0" shadow="cast:true; receive:true" static-body="shape: cylinder; cylinderRadius: 2.5; cylinderHeight: 3">
+            </a-entity>  
         </a-entity>
+        
 
         <!-- Nappe phreatique -->
         <a-entity geometry="primitive: cylinder; radius: 2.5; height: 1.5; segmentsRadial: 6"
             material="color: #1E88E5; emissive: #1E88E5; emissiveIntensity: 0.3"
             position="0 0.75 0"
             rotation="0 30 0"
-            shadow="cast:true; receive:true">
+            shadow="cast:true; receive:true"
+            static-body="shape: cylinder; cylinderRadius: 2.5; cylinderHeight: 1.5">
         </a-entity>
 
         <!-- Panneau de graphique -->
-        <a-entity id="chartPanel" position="4.45 2.4 -2.6" rotation="0 -60 0">
-            <a-plane id="chartPlane" width="4" height="3" material="color: white">
+        <a-entity id="chartPanel" position="4.45 2.4 -2.6" rotation="0 -60 0" static-body>
+            <a-plane id="chartPlane" width="4" height="3" material="shader: flat; color: white; emissive: white; emissiveIntensity: 1">
             </a-plane>
         </a-entity>
 
         <!-- Panneau d'information principal -->
-        <a-entity id="infoPanel" position="-4.5 2.5 -2.5" rotation="0 60 0">
-            <a-plane width="3" height="3.3" color="#333" opacity="0.8">
+        <a-entity id="infoPanel" position="-4.5 2.5 -2.5" rotation="0 60 0" static-body>
+            <a-plane width="3.35" height="3.8" color="#333" opacity="0.8">
                 <a-text id="infoText" value="Chargement..." 
                         width="2.7" align="left" wrap-count="25"
-                        position="-1.1 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        position="-1.3 0 0" color="white"
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
         <!-- Panneau meteo -->
-        <a-entity id="meteoPanel" position="4.5 2.5 2.5" rotation="0 -120 0">
-            <a-plane width="2.6" height="3" color="#333" opacity="0.8">
+        <a-entity id="meteoPanel" position="4.5 2.5 2.5" rotation="0 -120 0" static-body>
+            <a-plane width="2.4" height="3.5" color="#333" opacity="0.8">
                 <a-text id="meteoText" value="Chargement meteo..." 
                         width="2.7" align="left" wrap-count="25"
                         position="-1 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
         <!-- Panneau statistiques -->
-        <a-entity id="statsPanel" position="0 2.5 5.1" rotation="0 180 0">
-            <a-plane width="2.5" height="3" color="#333" opacity="0.8">
+        <a-entity id="statsPanel" position="-4.39 2.5 2.42" rotation="0 120 0" static-body>
+            <a-plane width="2.5" height="3.3" color="#333" opacity="0.8">
                 <a-text id="statsText" value="Chargement stats..." 
                         width="2.7" align="left" wrap-count="30"
                         position="-1 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
         <!-- Affichage niveau d'eau -->
-        <a-entity id="waterLevelDisplay" position="0 4.5 0" rotation="0 180 0">
+        <a-entity id="waterLevelDisplay" position="0 4.5 0" rotation="10 180 0" follow-camera-y>
             <a-plane position="0 -0.1 0.1" rotation="0 0 0" width="2.1" height="0.5"
                 material="color: #f5f5f5; opacity: 0.7; emissive: #f5f5f5; emissiveIntensity: 0.3" ></a-plane>
             <a-box width="2.3" height="1" depth="0.1" color="#000000">
                 <a-text id="waterLevelText" value="" 
                         width="3" align="center"
                         position="0 -0.1 0.11" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-box>
-            
         </a-entity>
 
+
         <!-- Camera -->
-        <a-entity position="0 0.2 -4.5" rotation="0 180 0">
+        <a-entity position="0 1 0" rotation="0 180 0">
             <a-camera raycaster="objects: .interactive" far="12" id="camera" fov="100" 
-                look-controls="pointerLockEnabled: true; mouseDrag: true" wasd-controls="enabled: true" rotation="0 0 0">
+                look-controls="pointerLockEnabled: true; mouseDrag: true"
+                wasd-controls="enabled: true; acceleration: 25" rotation="0 0 0">
                 <a-plane id="cursor"
-                        position="0 0 -1"
-                        width="0.12" 
-                        height="0.12" 
-                        material="src: ./textures/cursor.png; transparent: true; roughness: 100; metalness: 0;">
+                        position="0 0 -0.1"
+                        width="0.006" 
+                        height="0.006" 
+                        material="src: ./textures/cursor.png; transparent: true; roughness: 100; metalness: 0; emissive: #f5f5f5">
                 </a-plane>
             </a-camera>
         </a-entity>
 
         <!-- Lumiere ambiante-->
-        <a-light type="ambient" color="#8899FF" intensity="0.2"></a-light>
+        <a-light id="ambiantLight" type="ambient" color="#8899FF" intensity="0.2"></a-light>
 
         <!-- Ciel -->
         <a-sky color="#ECECEC"></a-sky>
-
     </a-scene>
-    <script>
-        // Recuperation des donnees depuis le sessionStorage
-        const waterData = JSON.parse(sessionStorage.getItem('waterData')) || {
-            waterLevels: [
-                {value: 107.34, date: "01/01/2023"},
-                {value: 107.37, date: "02/01/2023"},
-                {value: 107.39, date: "03/01/2023"},
-                {value: 107.41, date: "04/01/2023"},
-                {value: 107.45, date: "05/01/2023"},
-                {value: 107.48, date: "06/01/2023"}
-            ],
-            lastMeasurement: {
-                value: 107.48,
-                profondeur: 12.6
-            },
-            stationInfo: { 
-                codeBss: "03627X0052/P1", 
-                commune: "Gémigny", 
-                departement: "Loiret", 
-                altitude: "117.6", 
-                coordinates: { lat: 47.5, lng: 1.5 },
-                dateDebut: "01/01/2023",
-                dateFin: "06/01/2023"
-            },
-            meteoData: {
-                temperature: [10, 11, 12, 13, 14, 15],
-                humidity: [80, 78, 75, 72, 70, 68],
-                dates: ["01/01/2023", "02/01/2023", "03/01/2023", "04/01/2023", "05/01/2023", "06/01/2023"]
-            },
-            statistics: {
-                current: {
-                    median: 107.40,
-                    q1: 107.36,
-                    q3: 107.44
-                },
-                historical: {
-                    median: 107.38,
-                    q1: 107.32,
-                    q3: 107.46
+
+<!-- SVG -->
+<svg id="topDownView" width="200" height="200"
+     style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); z-index: 10; opacity: 100%; pointer-events: none;">
+    <polygon id="walls" points="40,0 160,0 215,100 160,200 40,200 -15,100"
+             fill="none" stroke="black" stroke-width="2" />
+             <polygon id="groundDepth" points="157,100 130,150 75,150 45,100 75,47 125,47"
+         fill="rgba(0,0,0,0.2)" stroke="black" stroke-width="2" />
+    <circle id="userPoint" cx="100" cy="190" r="5" fill="red" />
+    
+    <!-- Ajout des rectangles pour les portes -->
+    <rect id="backDoorRect" x="82" y="0" width="35" height="3" fill="green" />
+    <rect id="frontDoorRect" x="82" y="198" width="35" height="3" fill="blue" />
+</svg>
+
+<script>
+    const config = {
+        scaleFactor: 20,
+        svgCenter: { x: 100, y: 100 },
+        wallPolygon: [
+            [40, 0], // Haut gauche
+            [160, 0], // Haut droit
+            [215, 100], // Millieu droit
+            [160, 200], // Bas Droit
+            [40, 200], // Bas gauche
+            [-15, 100] // Millieu gauche
+        ],
+        groundDepthPolygon: [
+            [155,100], // Milieu droit
+            [130,147], // Droite bas
+            [75,147], // Gauche bas
+            [46 ,100], // Millieu Gauche
+            [72,52], // Haut gauche
+            [127,52] // Haut droite
+        ]
+    };
+
+    let lastValidCameraPosition = null;
+
+    function isInsidePolygon(x, y, polygon) {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = polygon[i][0], yi = polygon[i][1];
+            const xj = polygon[j][0], yj = polygon[j][1];
+            const intersect = ((yi > y) !== (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / ((yj - yi) || 0.00001) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    function updateSVGPoint(camera, userPoint) {
+        const position = camera.getAttribute('position');
+        const svgX = config.svgCenter.x + position.x * config.scaleFactor;
+        const svgY = config.svgCenter.y - position.z * config.scaleFactor;
+
+        if (isInsidePolygon(svgX, svgY, config.wallPolygon) &&
+            !isInsidePolygon(svgX, svgY, config.groundDepthPolygon)) {
+            userPoint.setAttribute('cx', svgX);
+            userPoint.setAttribute('cy', svgY);
+            lastValidCameraPosition = { ...position };
+        } else if (lastValidCameraPosition) {
+            // Rétablir la position précédente valide
+            camera.setAttribute('position', {
+                x: lastValidCameraPosition.x,
+                y: position.y,
+                z: lastValidCameraPosition.z
+            });
+        }
+    }
+
+    AFRAME.registerComponent('sync-svg-position', {
+        tick: function () {
+            const camera = this.el;
+            const userPoint = document.getElementById('userPoint');
+            updateSVGPoint(camera, userPoint);
+        }
+    });
+
+    window.addEventListener('load', () => {
+        const camera = document.querySelector('#camera');
+        const userPoint = document.getElementById('userPoint');
+
+        if (!camera) {
+            console.error("Caméra introuvable !");
+            return;
+        }
+
+        camera.setAttribute('position', { x: 0, y: 1, z: 4.5 });
+        lastValidCameraPosition = { x: 0, y: 1, z: -4.5 };
+        camera.setAttribute('sync-svg-position', '');
+
+        // Mise à jour initiale
+        setTimeout(() => {
+            updateSVGPoint(camera, userPoint);
+        }, 100);
+    });
+
+    // Suivi clavier
+    document.addEventListener('keydown', (event) => {
+        if (['z', 'q', 's', 'd'].includes(event.key.toLowerCase())) {
+            const camera = document.querySelector('#camera');
+            const userPoint = document.getElementById('userPoint');
+            updateSVGPoint(camera, userPoint);
+        }
+    });
+
+    // Suivi position en dehors du tick (ex: drag)
+    document.addEventListener('DOMContentLoaded', () => {
+        const camera = document.querySelector('#camera');
+        const userPoint = document.getElementById('userPoint');
+        camera.addEventListener('componentchanged', (event) => {
+            if (event.detail.name === 'position') {
+                updateSVGPoint(camera, userPoint);
+            }
+        });
+    });
+
+    // Récupération des données depuis le sessionStorage
+    const stationData = JSON.parse(sessionStorage.getItem('waterData'));
+    const apiBaseUrl = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes";
+    
+    // Objet pour stocker toutes les données
+    const waterData = {
+        stationInfo: stationData.stationInfo,
+        waterLevels: [],
+        lastMeasurement: null,
+        meteoData: null,
+        statistics: null
+    };
+
+    let stations = [];
+    let currentStationIndex = 0;
+
+    // Fonction pour convertir le format de date DD-MM-YYYY en YYYY-MM-DD
+    function convertToAPIDateFormat(dateStr) {
+        const [day, month, year] = dateStr.split('-');
+        return `${year}-${month}-${day}`;
+    }
+
+    // Fonction pour formater le texte avec saut de ligne
+    function formatText(content) {
+        return content.replace(/<br>/g, '\n');
+    }
+
+    // Fonction utilitaire pour fetch avec retry
+    async function fetchWithRetry(url, options = {}, maxAttempts = 2) {
+        let lastError;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (err) {
+                lastError = err;
+                if (attempt === maxAttempts) {
+                    console.error(`Erreur lors de l'appel API (${url}) après ${maxAttempts} tentatives :`, err);
                 }
             }
-        };
-    
-        // Fonction pour formater le texte avec saut de ligne
-        function formatText(content) {
-            return content.replace(/<br>/g, '\n');
         }
-    
-        // Mise à jour des panneaux 3D
-        function updatePanels() {
-            // Panneau principal
-            const infoContent = `
-                ${waterData.stationInfo.commune}<br>
-                Département: ${waterData.stationInfo.departement}<br>
-                Code BSS: ${waterData.stationInfo.codeBss}<br>
-                Altitude: ${waterData.stationInfo.altitude} m<br>
-                Profondeur: ${waterData.lastMeasurement.profondeur} m<br>
-                Période: ${waterData.stationInfo.dateDebut} au ${waterData.stationInfo.dateFin}
+        return null;
+    }
+
+    // Fonction utilitaire pour fetch avec retry et gestion du 429 (Too Many Requests)
+    async function fetchWithRetry(url, options = {}, maxAttempts = 2, delayMs = 1000) {
+        let lastError;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const response = await fetch(url, options);
+                if (response.status === 429) {
+                    // Trop de requêtes, attendre avant de réessayer
+                    if (attempt < maxAttempts) {
+                        console.warn(`API 429 Too Many Requests, tentative ${attempt}/${maxAttempts}, attente ${delayMs}ms...`);
+                        await new Promise(res => setTimeout(res, delayMs));
+                        continue;
+                    } else {
+                        throw new Error("Erreur 429: Trop de requêtes (Too Many Requests)");
+                    }
+                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (err) {
+                lastError = err;
+                if (attempt === maxAttempts) {
+                    console.error(`Erreur lors de l'appel API (${url}) après ${maxAttempts} tentatives :`, err);
+                }
+            }
+        }
+        return null;
+    }
+
+    // Fonction pour récupérer les données de niveau d'eau
+    async function fetchWaterLevels() {
+        try {
+            const dateDebutAPI = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
+            const dateFinAPI = convertToAPIDateFormat(waterData.stationInfo.dateFin);
+            const url = `${apiBaseUrl}/chroniques?code_bss=${waterData.stationInfo.codeBss}&date_debut_mesure=${dateDebutAPI}&date_fin_mesure=${dateFinAPI}`;
+            const data = await fetchWithRetry(url);
+            if (data && data.data && data.data.length > 0) {
+                waterData.waterLevels = data.data.map(item => ({
+                    value: item.niveau_nappe_eau,
+                    date: new Date(item.date_mesure).toLocaleDateString(),
+                    profondeur: item.profondeur_nappe
+                }));
+                waterData.lastMeasurement = waterData.waterLevels[waterData.waterLevels.length - 1];
+                calculateStatistics();
+            }
+        } catch (error) {
+            console.error("Erreur lors de la récupération des niveaux d'eau:", error);
+        }
+    }
+
+    // Fonction pour récupérer les données météo
+    async function fetchMeteoData() {
+        try {
+            const { lat, lng } = waterData.stationInfo.coordinates;
+            const dateDebutAPI = convertToAPIDateFormat(waterData.stationInfo.dateDebut);
+            const dateFinAPI = convertToAPIDateFormat(waterData.stationInfo.dateFin);
+            const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${dateDebutAPI}&end_date=${dateFinAPI}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code`;
+            const data = await fetchWithRetry(url, {}, 2, 2000); // 2 tentatives, 2s d'attente si 429
+            if (data && data.daily) {
+                waterData.meteoData = {
+                    tempMax: data.daily.temperature_2m_max,
+                    tempMin: data.daily.temperature_2m_min,
+                    precipitation: data.daily.precipitation_sum,
+                    weatherCode: data.daily.weather_code,
+                    dates: data.daily.time.map(date => new Date(date).toLocaleDateString())
+                };
+            }
+        } catch (error) {
+            console.error("Erreur lors de la récupération des données météo:", error);
+        }
+    }
+
+    // Fonction pour calculer les statistiques
+    function calculateStatistics() {
+        const values = waterData.waterLevels.map(item => item.value).sort((a, b) => a - b);
+        const n = values.length;
+        
+        if (n > 0) {
+            waterData.statistics = {
+                current: {
+                    median: calculatePercentile(values, 50),
+                    q1: calculatePercentile(values, 25),
+                    q3: calculatePercentile(values, 75),
+                    min: values[0],
+                    max: values[values.length - 1]
+                }
+            };
+        }
+    }
+
+    function calculatePercentile(values, percentile) {
+        const index = (percentile / 100) * (values.length - 1);
+        if (Math.floor(index) === index) {
+            return values[index];
+        }
+        const i = Math.floor(index);
+        const fraction = index - i;
+        return values[i] + (values[i + 1] - values[i]) * fraction;
+    }
+
+    // Fonction pour interpoler les couleurs dynamiquement sur un spectre plus sombre
+    function interpolateColor(value, min, max) {
+        const percentage = Math.min(Math.max((value - min) / (max - min), 0), 1); 
+        const hue = (1 - percentage) * 240; // 240° (bleu) → 0° (rouge) sur le cercle chromatique
+        return `hsl(${hue}, 100%, 37%)`; // Réduit la luminosité à 30% pour des couleurs plus sombres
+    }
+
+    // Mise à jour des panneaux 3D
+    function updatePanels() {
+        // Panneau principal
+        const infoContent = `
+            ${waterData.stationInfo.commune}<br>
+            Département: ${waterData.stationInfo.departement}<br>
+            Code BSS: ${waterData.stationInfo.codeBss}<br>
+            Altitude: ${waterData.stationInfo.altitude} m<br>
+            Profondeur Investigation: ${waterData.stationInfo.profondeurInv} m<br>
+            ${waterData.lastMeasurement ? `Profondeur actuelle: ${waterData.lastMeasurement.profondeur.toFixed(2)} m<br>` : ''}
+            Période: ${waterData.stationInfo.dateDebut} au ${waterData.stationInfo.dateFin}
+        `;
+        document.querySelector('#infoText').setAttribute('value', formatText(infoContent));
+
+        // Panneau meteo
+        if (waterData.meteoData) {
+            const avgTempMax = (waterData.meteoData.tempMax.reduce((a, b) => a + b, 0) / waterData.meteoData.tempMax.length).toFixed(1);
+            const avgTempMin = (waterData.meteoData.tempMin.reduce((a, b) => a + b, 0) / waterData.meteoData.tempMin.length).toFixed(1);
+            const totalPrecip = waterData.meteoData.precipitation.reduce((a, b) => a + b, 0).toFixed(1);
+            
+            const meteoContent = `
+                Données météo<br>
+                (Moyenne sur la période)<br>
+                Temp. max: ${avgTempMax}°C<br>
+                Temp. min: ${avgTempMin}°C<br>
+                Précipitations: ${totalPrecip} mm<br>
+                Période: ${waterData.meteoData.dates[0]}<br>
+                à ${waterData.meteoData.dates[waterData.meteoData.dates.length-1]}
             `;
-            document.querySelector('#infoText').setAttribute('value', formatText(infoContent));
-    
-            // Panneau meteo
-            if (waterData.meteoData) {
-                const avgTemp = (waterData.meteoData.temperature.reduce((a, b) => a + b, 0) / waterData.meteoData.temperature.length).toFixed(1);
-                const avgHumidity = (waterData.meteoData.humidity.reduce((a, b) => a + b, 0) / waterData.meteoData.humidity.length).toFixed(1);
-                
-                const meteoContent = `
-                    Données météo<br>
-                    (Moyenne)<br>
-                    Température: ${avgTemp}°C<br>
-                    Humidite: ${avgHumidity}%<br>
-                    Période: ${waterData.meteoData.dates[0]}<br>
-                    à ${waterData.meteoData.dates[waterData.meteoData.dates.length-1]}
-                `;
-                document.querySelector('#meteoText').setAttribute('value', formatText(meteoContent));
-            }
-    
-            // Panneau stats
-            if (waterData.statistics) {
-                const statsContent = `
-                    Statistiques<br>
-                    Médiane actuelle: ${waterData.statistics.current.median.toFixed(2)}<br>
-                    Q1 actuel: ${waterData.statistics.current.q1.toFixed(2)}<br>
-                    Q3 actuel: ${waterData.statistics.current.q3.toFixed(2)}<br>
-                    Médiane historique: ${waterData.statistics.historical.median.toFixed(2)}<br>
-                    Q1 historique: ${waterData.statistics.historical.q1.toFixed(2)}<br>
-                    Q3 historique: ${waterData.statistics.historical.q3.toFixed(2)}
-                `;
-                document.querySelector('#statsText').setAttribute('value', formatText(statsContent));
-            }
-        }
-    
-        function setupWater() {
-            const waterElement = document.querySelector('#water');
-            const lastValue = waterData.lastMeasurement.value;
-            const profondeur = waterData.lastMeasurement.profondeur;
-            const altitude = parseFloat(waterData.stationInfo.altitude);
-            const values = waterData.waterLevels.map(item => item.value);
-            const minValue = Math.min(...values);
-            const maxValue = Math.max(...values);
-            const waterLevelContent = `Niveau: ${waterData.lastMeasurement.value.toFixed(2)} m\n(Min: ${minValue.toFixed(2)} m / Max: ${maxValue.toFixed(2)} m)`;
-            document.querySelector('#waterLevelText').setAttribute('value', waterLevelContent);
+            document.querySelector('#meteoText').setAttribute('value', formatText(meteoContent));
 
-            const maxDepthVisual = 3;
-            const scaledHeight = (profondeur / altitude) * maxDepthVisual;
+            // Définie la couleur des plinthes et de la lumière en fonction de la température
+            let plinthColor, ambientColor;
+            const tempRangeMin = 5;
+            const tempRangeMax = 28;
 
-            const waterY = (1.5 + 0.01) - scaledHeight / 2;
+            // Interpolation des couleurs en fonction de la température moyenne
+            const avgTemp = (parseFloat(avgTempMax) + parseFloat(avgTempMin)) / 2; // Assure que les valeurs sont des nombres
+            plinthColor = interpolateColor(avgTempMax, tempRangeMin, tempRangeMax);
+            ambientColor = plinthColor;
 
-            waterElement.setAttribute('geometry', {
-                primitive: 'cylinder',
-                radius: 2.505,
-                height: scaledHeight,
-                segmentsRadial: 6
+            // Met les plinthes à la couleur correspondante
+            document.querySelectorAll('#plinthes-Bas a-box, #plinthes-Haut a-box').forEach(plinth => {
+                plinth.setAttribute('material', `color: ${plinthColor}; emissive: ${plinthColor}; emissiveIntensity: 0.3`); // Réduit l'intensité de l'émissivité
             });
 
-            waterElement.setAttribute('position', `0 ${waterY} 0`);
-}
+            // Met à jour la texture des murs en fonction de la couleur interpolée
+            document.querySelectorAll('#mur a-plane').forEach(wall => {
+                let textureSrc;
+                const hue = parseInt(plinthColor.match(/\d+/)[0]);
+                if (hue >= 180) { // Bleu
+                    textureSrc = './textures/texture-mur.jpg';
+                } else if (hue >= 90) { // Vert
+                    textureSrc = './textures/texture-mur-vert.jpg';
+                } else if (hue >= 30) { // Orange
+                    textureSrc = './textures/texture-mur-orange.jpg';
+                } else { // Rouge
+                    textureSrc = './textures/texture-mur-rouge.jpg';
+                }
+                wall.setAttribute('material', `src: ${textureSrc}; roughness: 1; metalness: 0; repeat: 3 1`);
+            });
 
+            // Met à jour la lumière ambiante
+            document.querySelector('#ambiantLight').setAttribute('color', ambientColor);
+        }
 
+        // Panneau stats
+        if (waterData.statistics) {
+            const statsContent = `
+                Statistiques du niveau d'eau<br>
+                Période: ${waterData.stationInfo.dateDebut}<br>
+                au ${waterData.stationInfo.dateFin}<br>
+                Médiane: ${waterData.statistics.current.median.toFixed(2)} m<br>
+                Quartile 1: ${waterData.statistics.current.q1.toFixed(2)} m<br>
+                Quartile 3: ${waterData.statistics.current.q3.toFixed(2)} m<br>
+                Minimum: ${waterData.statistics.current.min.toFixed(2)} m<br>
+                Maximum: ${waterData.statistics.current.max.toFixed(2)} m
+            `;
+            document.querySelector('#statsText').setAttribute('value', formatText(statsContent));
+        }
+    }
 
+    function setupWater() {
+        const waterElement = document.querySelector('#water');
+        if (!waterData.lastMeasurement) return;
 
+        const values = waterData.waterLevels.map(item => item.value);
+        const minValue = waterData.statistics.current.min;
+        const maxValue = waterData.statistics.current.max;
+        
+        const waterLevelContent = `Niveau: ${waterData.lastMeasurement.value.toFixed(2)} m\n(Min: ${minValue.toFixed(2)} m / Max: ${maxValue.toFixed(2)} m)`;
+        document.querySelector('#waterLevelText').setAttribute('value', waterLevelContent);
 
-        function createChart() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 800;
-            canvas.height = 600;
-            const ctx = canvas.getContext('2d');
+        const maxDepthVisual = 3;
+        const scaledHeight = (waterData.lastMeasurement.profondeur / waterData.stationInfo.altitude) * maxDepthVisual;
+        const waterY = (1.5 + 0.01) - scaledHeight / 2;
 
-            let labels = [];
-            let chartValues = [];
+        waterElement.setAttribute('geometry', {
+            primitive: 'cylinder',
+            radius: 2.505,
+            height: scaledHeight,
+            segmentsRadial: 6
+        });
 
-            if (waterData.waterLevels && waterData.waterLevels.length > 0) {
-                labels = waterData.waterLevels.map(item => item.date);
-                chartValues = waterData.waterLevels.map(item => item.value);
-            }
+        waterElement.setAttribute('position', `0 ${waterY} 0`);
+    }
 
-            const chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Niveau de la nappe (m)',
-                        data: chartValues,
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: true
-                    }]
+    async function createChart() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+
+        const labels = waterData.waterLevels.map(item => item.date);
+        const chartValues = waterData.waterLevels.map(item => item.value);
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Niveau de la nappe (m)',
+                    data: chartValues,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                animation: {
+                    onComplete: () => {
+                        const chartImgDataUrl = canvas.toDataURL("image/png");
+                        const chartPlane = document.querySelector('#chartPlane');
+                        chartPlane.setAttribute('material', 'src', chartImgDataUrl);
+                    }
                 },
-                options: {
-                    animation: {
-                        onComplete: () => {
-                            const chartImgDataUrl = canvas.toDataURL("image/png");
-                            const chartPlane = document.querySelector('#chartPlane');
-                            if (chartPlane) {
-                                chartPlane.setAttribute('material', 'src', chartImgDataUrl);
-                            } else {
-                                console.warn("chartPlane non trouvé dans la scène A-Frame.");
-                            }
-                        }
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `Évolution du niveau d'eau - ${waterData.stationInfo.commune} (${waterData.stationInfo.dateDebut} au ${waterData.stationInfo.dateFin})`
                     },
-                    responsive: false,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `Évolution du niveau d'eau - ${waterData.stationInfo.commune}`
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `Niveau: ${context.parsed.y.toFixed(2)} m`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Niveau (m)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Date'
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Niveau: ${context.parsed.y.toFixed(2)} m`;
                             }
                         }
                     }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Niveau (m)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
                 }
-            });
+            }
+        });
+    }
+
+    async function fetchStations(regionCode, dateDebut, dateFin, selectedCityCodeBss) {
+        try {
+            // Récupérer toutes les villes de la région avec des données disponibles
+            const response = await fetch(`${apiBaseUrl}?code_departement=${regionCode}&date_debut_mesure=${dateDebut}&date_fin_mesure=${dateFin}`);
+            const data = await response.json();
+
+            // Mapper les stations avec les détails nécessaires
+            stations = data.data.map(station => ({
+                codeBss: station.code_bss,
+                longitude: station.longitude,
+                latitude: station.latitude,
+                commune: station.commune,
+                departement: station.departement,
+                altitude: station.altitude,
+                profondeurInv: station.profondeur_investigation
+            }));
+
+            // Trier les stations par proximité, en commençant par la ville sélectionnée
+            stations = sortStationsByProximity(stations, selectedCityCodeBss);
+
+            // Ajouter les stations triées dans waterData
+            waterData.sortedStations = stations;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des stations:", error);
+        }
+    }
+
+    function sortStationsByProximity(stations, selectedCityCodeBss) {
+        const distanceMatrix = createDistanceMatrix(stations);
+        const visited = new Set();
+        const sorted = [];
+
+        // Trouver l'index de la ville sélectionnée
+        const startIndex = stations.findIndex(station => station.codeBss === selectedCityCodeBss);
+        if (startIndex === -1) {
+            throw new Error("La ville sélectionnée n'a pas été trouvée dans les données.");
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            updatePanels();
-            setupWater();
-            createChart();
+        let currentIndex = startIndex;
+        visited.add(currentIndex);
+        sorted.push(stations[currentIndex]);
+
+        while (visited.size < stations.length) {
+            let closestIndex = -1;
+            let minDist = Infinity;
+
+            // Trouver la station la plus proche
+            for (let i = 0; i < stations.length; i++) {
+                if (visited.has(i)) continue;
+
+                const dist = distanceMatrix[currentIndex][i];
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestIndex = i;
+                }
+            }
+
+            if (closestIndex !== -1) {
+                visited.add(closestIndex);
+                sorted.push(stations[closestIndex]);
+                currentIndex = closestIndex;
+            }
+        }
+
+        return sorted;
+    }
+
+    function createDistanceMatrix(stations) {
+        // Créer une matrice de distances entre les stations
+        return stations.map(s1 =>
+            stations.map(s2 =>
+                s1 === s2 ? 0 : euclideanDistance(s1.longitude, s1.latitude, s2.longitude, s2.latitude)
+            )
+        );
+    }
+
+    function euclideanDistance(lon1, lat1, lon2, lat2) {
+        // Calculer la distance euclidienne entre deux coordonnées
+        const dx = lon1 - lon2;
+        const dy = lat1 - lat2;
+        return dx * dx + dy * dy;
+    }
+
+    // Fonction pour calculer la distance euclidienne
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const dx = lon1 - lon2;
+        const dy = lat1 - lat2;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Fonction pour trier les stations par proximité à la station courante
+    function sortStationsByProximity(infoPourAlgo, selectedBss) {
+        const selectedStation = infoPourAlgo.find(st => st.BSS === selectedBss);
+        if (!selectedStation) return infoPourAlgo;
+        return infoPourAlgo
+            .map(st => ({
+                ...st,
+                distance: calculateDistance(selectedStation.latitude, selectedStation.longitude, st.latitude, st.longitude)
+            }))
+            .sort((a, b) => a.distance - b.distance);
+    }
+
+    // Fonction pour charger les données d'une station par code BSS
+    async function loadStationDataByBss(codeBss) {
+        const stationInfo = stations.find(st => st.BSS === codeBss);
+        if (!stationInfo) return;
+
+        // Mettre à jour stationInfo dans waterData
+        waterData.stationInfo.codeBss = stationInfo.BSS;
+        waterData.stationInfo.coordinates = { lat: stationInfo.latitude, lng: stationInfo.longitude };
+        if (stationInfo.commune) waterData.stationInfo.commune = stationInfo.commune;
+        if (stationInfo.departement) waterData.stationInfo.departement = stationInfo.departement;
+        if (stationInfo.altitude) waterData.stationInfo.altitude = stationInfo.altitude;
+        if (stationInfo.profondeurInv) waterData.stationInfo.profondeurInv = stationInfo.profondeurInv;
+
+        // Reset data before fetching
+        waterData.waterLevels = [];
+        waterData.lastMeasurement = null;
+        waterData.meteoData = null;
+        waterData.statistics = null;
+
+        // Récupérer les données
+        await fetchWaterLevels();
+        await fetchMeteoData();
+        calculateStatistics();
+
+        // Mettre à jour les panneaux et l'eau
+        updatePanels();
+        setupWater();
+        createChart();
+
+        // Stocker TOUTES les données à jour dans le sessionStorage (après update)
+        sessionStorage.setItem('waterData', JSON.stringify({
+            ...waterData,
+            infoPourAlgo: stations
+        }));
+
+        // Réinitialiser la position de la caméra à la position initiale
+        const camera = document.querySelector('#camera');
+        if (camera) {
+            camera.setAttribute('position', { x: 0, y: 1, z: 4.5 });
+            camera.setAttribute('rotation', { x: 0, y: 180, z: 0 });
+        }
+    }
+
+    // Pour éviter les changements multiples, on bloque la transition tant qu'un chargement est en cours
+    let isTransitioning = false;
+
+    function handleDoorTransition(isBackDoor) {
+        if (isTransitioning) return;
+        isTransitioning = true;
+
+        // Créer l'overlay noir sans texte
+        const fadeOverlay = document.createElement('div');
+        fadeOverlay.style.position = 'absolute';
+        fadeOverlay.style.top = '0';
+        fadeOverlay.style.left = '0';
+        fadeOverlay.style.width = '100%';
+        fadeOverlay.style.height = '100%';
+        fadeOverlay.style.backgroundColor = 'black';
+        fadeOverlay.style.opacity = '0';
+        fadeOverlay.style.transition = 'opacity 0.5s';
+        fadeOverlay.style.zIndex = '9999';
+        document.body.appendChild(fadeOverlay);
+
+        // Bloquer les déplacements
+        const camera = document.querySelector('#camera');
+        if (camera) {
+            camera.setAttribute('wasd-controls', 'enabled: false; acceleration: 0');
+        }
+
+        fadeOverlay.style.opacity = '1';
+        setTimeout(async () => {
+            const prevIndex = currentStationIndex;
+            if (isBackDoor) {
+                currentStationIndex = (currentStationIndex === 0) ? stations.length - 1 : currentStationIndex - 1;
+            } else {
+                currentStationIndex = (currentStationIndex === stations.length - 1) ? 0 : currentStationIndex + 1;
+            }
+            const nextIndex = currentStationIndex;
+            const nextStation = stations[currentStationIndex];
+            // Enregistrer l'index courant dans le localStorage pour persistance
+            localStorage.setItem('currentStationIndex', currentStationIndex);
+            console.log(`Changement de ville : index actuel = ${prevIndex}, prochain index = ${nextIndex}`);
+            await loadStationDataByBss(nextStation.BSS);
+
+            // Débloquer les déplacements (remettre la valeur par défaut)
+            if (camera) {
+                camera.setAttribute('wasd-controls', 'enabled: true; acceleration: 25');
+            }
+
+            fadeOverlay.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(fadeOverlay);
+                isTransitioning = false;
+            }, 500);
+        }, 500);
+    }
+
+    function checkDoorCollision(cameraPosition) {
+        const svgX = config.svgCenter.x + cameraPosition.x * config.scaleFactor;
+        const svgY = config.svgCenter.y - cameraPosition.z * config.scaleFactor;
+
+        const backDoorRect = { x: 82, y: 0, width: 20, height: 3 }; 
+        const frontDoorRect = { x: 82, y: 198, width: 20, height: 3 };
+
+        if (svgX >= backDoorRect.x && svgX <= backDoorRect.x + backDoorRect.width &&
+            svgY >= backDoorRect.y && svgY <= backDoorRect.y + backDoorRect.height) {
+            handleDoorTransition(true);
+        } else if (svgX >= frontDoorRect.x && svgX <= frontDoorRect.x + frontDoorRect.width &&
+                   svgY >= frontDoorRect.y && svgY <= frontDoorRect.y + frontDoorRect.height) {
+            handleDoorTransition(false);
+        }
+    }
+
+    AFRAME.registerComponent('check-doors', {
+        tick: function () {
+            const camera = this.el;
+            const position = camera.getAttribute('position');
+            checkDoorCollision(position);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        // Utiliser infoPourAlgo pour la navigation
+        const infoPourAlgo = stationData.infoPourAlgo;
+        const selectedBss = stationData.stationInfo.codeBss;
+
+        // Ajout : stocker toutes les infos nécessaires pour chaque station (commune, altitude, stats, etc.)
+        stations = infoPourAlgo.map(st => ({
+            BSS: st.BSS,
+            longitude: st.longitude,
+            latitude: st.latitude,
+            commune: st.commune,
+            departement: st.departement,
+            altitude: st.altitude,
+            profondeurInv: st.profondeurInv,
+            statistics: st.statistics // {median, q1, q3, min, max}
+        }));
+
+        // Supprimer les doublons éventuels (par BSS)
+        stations = stations.filter((st, idx, arr) =>
+            arr.findIndex(s2 => s2.BSS === st.BSS) === idx
+        );
+
+        stations = sortStationsByProximity(stations, selectedBss);
+
+        // Toujours démarrer à l'index 0 après un rafraîchissement
+        currentStationIndex = 0;
+
+        await loadStationDataByBss(stations[currentStationIndex].BSS);
+
+        // Activer la détection des portes
+        const camera = document.querySelector('#camera');
+        camera.setAttribute('check-doors', '');
+    });
+</script>
+
+    <!-- Bouton menu latéral -->
+    <button id="openMapMenuBtn" style="position:fixed; left:10px; top:50%; transform:translateY(-50%); z-index:10001; background:black; color:white; border:none; border-radius:5px; padding:16px 12px; font-size:1.2em; cursor:pointer;">
+        Carte
+    </button>
+
+    <!-- Overlay menu latéral (initialement caché) -->
+    <div id="mapMenuOverlay" style="position:fixed; left:0; top:0; width:100vw; height:100vh; background:black; z-index:10000; display:none; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;">
+        <div id="closeMapMenuBtn" style="position:absolute; top:20px; left:20px; color:white; font-size:2em; cursor:pointer; z-index:10001;">✕</div>
+        <div id="leafletMapContainer" style="width:80vw; height:80vh; margin:auto; border-radius:16px; overflow:hidden; box-shadow:0 0 40px #000;"></div>
+        <div id="cityInfoPanel" style="position:absolute; top:40px; right:40px; background:rgba(0,0,0,0.85); color:white; padding:18px 28px; border-radius:12px; font-size:1.2em; display:none; z-index:10002;">
+            <div id="cityName"></div>
+            <button id="teleportBtn" style="margin-top:12px; padding:8px 18px; font-size:1em; background:#e53935; color:white; border:none; border-radius:6px; cursor:pointer; display:none;">Téléporter ici</button>
+        </div>
+    </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script>
+    // ----------- MENU CARTE LEAFLET -----------
+    let leafletMap, cityMarkers = [], selectedMapCityIndex = null;
+
+    // Animation d'ouverture/fermeture du menu
+    function openMapMenu() {
+        const overlay = document.getElementById('mapMenuOverlay');
+        overlay.style.display = 'flex';
+        overlay.style.opacity = 0;
+        overlay.style.transition = 'opacity 0.4s';
+        setTimeout(() => { overlay.style.opacity = 1; }, 10);
+
+        // Initialiser la carte Leaflet si pas déjà fait
+        if (!leafletMap) {
+            leafletMap = L.map('leafletMapContainer', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([stations[0].latitude, stations[0].longitude], 8);
+
+            // Fond de carte
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                minZoom: 5
+            }).addTo(leafletMap);
+
+            // Ajout des marqueurs pour chaque ville
+            cityMarkers = stations.map((st, idx) => {
+                const markerIcon = L.divIcon({
+                    className: '',
+                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                    iconSize: [18,18],
+                    iconAnchor: [9,9]
+                });
+                const marker = L.marker([st.latitude, st.longitude], {icon: markerIcon}).addTo(leafletMap);
+
+                marker.on('click', () => {
+                    selectMapCity(idx);
+                });
+
+                return marker;
+            });
+        } else {
+            // Mettre à jour les couleurs des marqueurs
+            cityMarkers.forEach((marker, idx) => {
+                marker.setIcon(L.divIcon({
+                    className: '',
+                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                    iconSize: [18,18],
+                    iconAnchor: [9,9]
+                }));
+            });
+            leafletMap.setView([stations[currentStationIndex].latitude, stations[currentStationIndex].longitude], leafletMap.getZoom());
+        }
+
+        // Réinitialiser panneau info
+        document.getElementById('cityInfoPanel').style.display = 'none';
+        document.getElementById('teleportBtn').style.display = 'none';
+        selectedMapCityIndex = null;
+    }
+
+    function closeMapMenu() {
+        const overlay = document.getElementById('mapMenuOverlay');
+        overlay.style.opacity = 0;
+        setTimeout(() => { overlay.style.display = 'none'; }, 400);
+    }
+
+    // Sélection d'une ville sur la carte
+    function selectMapCity(idx) {
+        selectedMapCityIndex = idx;
+        const city = stations[idx];
+        document.getElementById('cityName').innerText = city.commune || city.BSS;
+        document.getElementById('cityInfoPanel').style.display = 'block';
+        document.getElementById('teleportBtn').style.display = (idx !== currentStationIndex) ? 'inline-block' : 'none';
+
+        // Afficher un popup au-dessus du marqueur
+        cityMarkers[idx].bindPopup(`<b>${city.commune || city.BSS}</b>`).openPopup();
+    }
+
+    // Téléportation vers la ville sélectionnée
+    async function teleportToSelectedCity() {
+        if (selectedMapCityIndex == null || selectedMapCityIndex === currentStationIndex) return;
+
+        // Réordonner le tableau pour que la ville sélectionnée soit à l'index 0
+        if (selectedMapCityIndex !== 0) {
+            const selectedCity = stations[selectedMapCityIndex];
+            stations.splice(selectedMapCityIndex, 1);
+            stations.unshift(selectedCity);
+            currentStationIndex = 0;
+        } else {
+            currentStationIndex = 0;
+        }
+
+        // Mettre à jour la carte (curseur rouge)
+        cityMarkers.forEach((marker, idx) => {
+            marker.setIcon(L.divIcon({
+                className: '',
+                html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                iconSize: [18,18],
+                iconAnchor: [9,9]
+            }));
         });
-    </script>
+
+        // Charger la ville dans A-Frame
+        await loadStationDataByBss(stations[0].BSS);
+
+        // Fermer le menu
+        closeMapMenu();
+    }
+
+    // Gestion des boutons menu
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('openMapMenuBtn').onclick = openMapMenu;
+        document.getElementById('closeMapMenuBtn').onclick = closeMapMenu;
+        document.getElementById('teleportBtn').onclick = teleportToSelectedCity;
+    });
+</script>
 </body>
 </html>
