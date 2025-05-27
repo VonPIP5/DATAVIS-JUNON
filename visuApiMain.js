@@ -5,7 +5,7 @@
  */
 
 import { fetchStationsData, departementStationsInformations, invertDate, getCoordsAndAvg, stationsData, dateDebut, dateFin } from './modules_visu_tube/data.js';
-import { registerPolygonComponent, highlightSerieByCodeBSS, rotatePolygonToFaceCamera } from './modules_visu_tube/visualisation.js';
+import { registerPolygonComponent, highlightSerieByCodeBSS, rotatePolygonToFaceCamera, updatePolygonColors } from './modules_visu_tube/visualisation.js';
 import { generateMap } from './modules_visu_tube/map.js';
 // import { createMultiLineChart, createNormalizedChart } from './modules_visu_tube/graphs.js';
 import { createNormalizedChart } from './modules_visu_tube/graphs.js';
@@ -33,9 +33,19 @@ baseInfosPanel.innerHTML = `
 		<option value="distances"> Distances entre stations</option>
 		<option value="mesures"> Mesures des nappes </option>
 	</select>
+     <hr/>
+     <p><span class='bold'>Couleurs de visualisation</span></p>    
+    <label for="colorBegin">Couleur mesure min:</label>
+    <input type="color" id="colorBegin" name="colorBegin" value="#d81f07">
+    <br/>
+    <label for="colorEnd">Couleur mesure max:</label>
+    <input type="color" id="colorEnd" name="colorEnd" value="#00ffe9">
 `;
 
 const ordreSelect = document.getElementById('ordre');
+
+const colorBegin = document.getElementById('colorBegin');
+const colorEnd = document.getElementById('colorEnd');
 
 // Enregistrement du composant A-Frame
 registerPolygonComponent();
@@ -88,15 +98,15 @@ function searchStation() {
 document.getElementById('visuGraphique').addEventListener('click', function () {
     overlay.classList.toggle('active');
     graphiquePanel.classList.toggle('active');
-    
+
     // const multiLineChart = createMultiLineChart();
     // multiLineChartSection.innerHTML = '';
     // multiLineChartSection.appendChild(multiLineChart);
-    
+
     const normalizedChart = createNormalizedChart();
     normalizedChartSection.innerHTML = '';
     normalizedChartSection.appendChild(normalizedChart);
-    
+
 });
 
 overlay.addEventListener('click', function () {
@@ -108,5 +118,13 @@ ordreSelect.addEventListener('change', function () {
     fetchStationsData(dateDebut, dateFin)
 });
 
+colorBegin.addEventListener('change', function () {
+    updatePolygonColors(colorBegin.value, colorEnd.value);
+});
+
+colorEnd.addEventListener('change', function () {
+    updatePolygonColors(colorBegin.value, colorEnd.value);
+});
+
 // Variables globales exportées
-export { infoPanel, graphiquePanel, ordreSelect };
+export { infoPanel, graphiquePanel, ordreSelect, colorBegin, colorEnd };

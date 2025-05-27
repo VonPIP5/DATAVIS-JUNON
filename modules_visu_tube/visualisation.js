@@ -5,11 +5,11 @@
  */
 
 import { departementStationsInformations, getMaxDataCount, getMinMaxValues, getAllDates, getCoordsAndAvg } from './data.js';
-import { infoPanel, graphiquePanel } from '../visuApiMain.js';
+import { infoPanel, graphiquePanel, colorBegin, colorEnd } from '../visuApiMain.js';
 import { generateMap, leafletMarkersByCodeBSS } from './map.js';
 
-const color_begin = [216, 31, 7]; // Rouge
-const color_end = [0, 209, 233];  // Bleu
+let color_begin;
+let color_end;
 
 let currentHighlight = null;
 
@@ -19,9 +19,29 @@ const camera = document.querySelector('#camera');
 const step = 0.2;
 
 /**
+ * Convertir une couleur hexadécimale en tableau comportant les valeurs RGB
+ * @param {string} hex - La couleur hexadécimale à convertir
+ * @return {Array} - Un tableau contenant les valeurs RGB 
+ */
+
+function hexToRgbArray(hex) {
+    hex = hex.replace(/^#/, '');
+    const bigint = parseInt(hex, 16);
+    return [
+        (bigint >> 16) & 255,
+        (bigint >> 8) & 255,
+        bigint & 255
+    ];
+}
+
+/**
  * Enregistre le composant A-Frame polygon
  */
 export function registerPolygonComponent() {
+
+    color_begin = hexToRgbArray(colorBegin.value); // Rouge
+    color_end = hexToRgbArray(colorEnd.value); // Bleu
+
     /**
      * Créer le polygone support des données de mesure
      * @type {AFRAME.Component}
@@ -234,8 +254,6 @@ export function registerPolygonComponent() {
                     const rectangleGeometry = new THREE.BoxGeometry(width, height, depth);
                     const rectangleMaterial = new THREE.MeshStandardMaterial({
                         color: color,
-                        transparent: true,
-                        opacity: 1
                     });
 
                     const rectangle = new THREE.Mesh(rectangleGeometry, rectangleMaterial);
@@ -549,3 +567,22 @@ window.addEventListener('keydown', (e) => {
         camera.setAttribute('position', position);
     }
 });
+
+/**
+ * Remplacer les couleurs des mesures minimum et maximum par les nouvelles lorsque l'on en sélectionne une
+ * @param {string} newColorBegin 
+ * @param {string} newColorEnd 
+ */
+
+export function updatePolygonColors(newColorBegin, newColorEnd) {
+    const polygonEl = document.querySelector('[polygon]');
+    if (!polygonEl) return;
+
+    const polygonComponent = polygonEl.components.polygon;
+    if (!polygonComponent) return;
+
+    color_begin = hexToRgbArray(newColorBegin);
+    color_end = hexToRgbArray(newColorEnd);
+
+    polygonComponent.updatePolygon(departementStationsInformations.stations.length);
+}
