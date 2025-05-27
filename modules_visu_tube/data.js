@@ -172,6 +172,151 @@ export function sortStationsByProximity(stations) {
 }
 
 /**
+ * Crée une matrice de distance entre stations basée sur la similarité de niveau de nappe
+ * @param {Array} stations - Liste des stations
+ */
+export function createNappeLevelDistanceMatrix(stations) {
+    const allDates = getAllDates(stations);
+
+    // Préparation des vecteurs de mesures pour chaque station, alignés sur les dates
+    const vectors = stations.map(station => {
+        const niveauMap = new Map();
+        station.mesuresNappes.forEach(m => {
+            if (m.niveauNappe !== null) {
+                niveauMap.set(m.date, parseFloat(m.niveauNappe));
+            }
+        });
+
+        const vec = allDates.map(date => niveauMap.has(date) ? niveauMap.get(date) : null);
+        return interpolateMissingValues(vec);
+
+    });
+
+    const distanceMatrix = vectors.map(v1 =>
+        vectors.map(v2 => euclideanDistanceVector(v1, v2))
+    );
+
+    console.log("Matrice des distances de niveau de nappe:", distanceMatrix);
+    return distanceMatrix;
+}
+
+/**
+ * Distance euclidienne entre deux vecteurs
+ */
+function euclideanDistanceVector(a, b) {
+    if (a.length !== b.length) return Infinity;
+    return Math.sqrt(a.reduce((sum, val, i) => sum + (val - b[i]) ** 2, 0));
+}
+
+/**
+ * Remplit un vecteur de valeurs en interpolant les valeurs manquantes (null)
+ * @param {Array<number|null>} vec - Vecteur avec trous
+ * @return {Array<number>} - Vecteur rempli
+ */
+function interpolateMissingValues(vec) {
+    const filled = [...vec];
+
+    for (let i = 0; i < filled.length; i++) {
+        if (filled[i] === null) {
+            let before = null;
+            let after = null;
+
+            // Chercher valeur avant
+            for (let j = i - 1; j >= 0; j--) {
+                if (filled[j] !== null) {
+                    before = filled[j];
+                    break;
+                }
+            }
+
+            // Chercher valeur après
+            for (let j = i + 1; j < filled.length; j++) {
+                if (filled[j] !== null) {
+                    after = filled[j];
+                    break;
+                }
+            }
+
+            if (before !== null && after !== null) {
+                filled[i] = (before + after) / 2;
+            } else if (before !== null) {
+                filled[i] = before;
+            } else if (after !== null) {
+                filled[i] = after;
+            } else {
+                filled[i] = 0; // Si aucune valeur n'est trouvée, on remplit avec 0
+            }
+        }
+    }
+
+    return filled;
+}
+
+/**
+ * Trie les stations selon la similarité de niveau de nappe
+ * @param {Array} stations - Liste des stations avec mesuresNappes
+ * @return {Array} - Stations triées par similarité de tendance
+ */
+export function sortStationsByMesuresNappe(stations) {
+    if (stations.length < 2) return stations;
+
+    const stationsCopy = [...stations];
+    const nappeLevelMatrix = createNappeLevelDistanceMatrix(stationsCopy);
+    const visited = new Set();
+    const sorted = [];
+
+    // Trouver les deux stations les plus similaires
+    let top = 0, last = 0, minDist = Infinity;
+    nappeLevelMatrix.forEach((row, i) => {
+        row.forEach((dist, j) => {
+            if (i !== j && dist < minDist) {
+                minDist = dist;
+                top = i;
+                last = j;
+            }
+        });
+    });
+
+    visited.add(top);
+    visited.add(last);
+    sorted.push(stationsCopy[top]);
+    sorted.push(stationsCopy[last]);
+
+    while (visited.size < stationsCopy.length) {
+        let closest = -1, pos = '', bestDist = Infinity;
+
+        for (let i = 0; i < stationsCopy.length; i++) {
+            if (visited.has(i)) continue;
+
+            const dTop = nappeLevelMatrix[top][i];
+            const dLast = nappeLevelMatrix[last][i];
+
+            if (dTop < bestDist) {
+                closest = i;
+                pos = 'top';
+                bestDist = dTop;
+            }
+            if (dLast < bestDist) {
+                closest = i;
+                pos = 'last';
+                bestDist = dLast;
+            }
+        }
+
+        visited.add(closest);
+        if (pos === 'top') {
+            sorted.unshift(stationsCopy[closest]);
+            top = closest;
+        } else {
+            sorted.push(stationsCopy[closest]);
+            last = closest;
+        }
+    }
+
+    return sorted;
+}
+
+/**
  * Récupération des données de niveaux de nappe de l'API 
  */
 
@@ -218,16 +363,16 @@ export async function fetchStationsData() {
             )
         );
     } else if (ordreVisu && ordreVisu === 'mesures') {
-        // departementStationsInformations.stations = sortStationsByMesuresNappe(
-        //     [...departementStationsInformations.stations].filter(s =>
-        //         s.mesuresNappes
-        //     )
-        // );
-        departementStationsInformations.stations = sortStationsByProximity(
+        departementStationsInformations.stations = sortStationsByMesuresNappe(
             [...departementStationsInformations.stations].filter(s =>
-                s.longitude && s.latitude
+                s.mesuresNappes
             )
         );
+        // departementStationsInformations.stations = sortStationsByProximity(
+        //     [...departementStationsInformations.stations].filter(s =>
+        //         s.longitude && s.latitude
+        //     )
+        // );
     } else {
         console.error("Ordre de visualisation invalide:", ordreVisu);
     }
