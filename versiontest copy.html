@@ -154,7 +154,7 @@
                 <a-text id="infoText" value="Chargement..." 
                         width="2.7" align="left" wrap-count="25"
                         position="-1.3 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
@@ -164,7 +164,7 @@
                 <a-text id="meteoText" value="Chargement meteo..." 
                         width="2.7" align="left" wrap-count="25"
                         position="-1 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
@@ -174,7 +174,7 @@
                 <a-text id="statsText" value="Chargement stats..." 
                         width="2.7" align="left" wrap-count="30"
                         position="-1 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
@@ -186,7 +186,7 @@
                 <a-text id="waterLevelText" value="" 
                         width="3" align="center"
                         position="0 -0.1 0.11" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%ABl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-box>
         </a-entity>
 
@@ -907,6 +907,141 @@
         // Activer la détection des portes
         const camera = document.querySelector('#camera');
         camera.setAttribute('check-doors', '');
+    });
+</script>
+
+    <!-- Bouton menu latéral -->
+    <button id="openMapMenuBtn" style="position:fixed; left:10px; top:50%; transform:translateY(-50%); z-index:10001; background:black; color:white; border:none; border-radius:5px; padding:16px 12px; font-size:1.2em; cursor:pointer;">
+        Carte
+    </button>
+
+    <!-- Overlay menu latéral (initialement caché) -->
+    <div id="mapMenuOverlay" style="position:fixed; left:0; top:0; width:100vw; height:100vh; background:black; z-index:10000; display:none; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;">
+        <div id="closeMapMenuBtn" style="position:absolute; top:20px; left:20px; color:white; font-size:2em; cursor:pointer; z-index:10001;">✕</div>
+        <div id="leafletMapContainer" style="width:80vw; height:80vh; margin:auto; border-radius:16px; overflow:hidden; box-shadow:0 0 40px #000;"></div>
+        <div id="cityInfoPanel" style="position:absolute; top:40px; right:40px; background:rgba(0,0,0,0.85); color:white; padding:18px 28px; border-radius:12px; font-size:1.2em; display:none; z-index:10002;">
+            <div id="cityName"></div>
+            <button id="teleportBtn" style="margin-top:12px; padding:8px 18px; font-size:1em; background:#e53935; color:white; border:none; border-radius:6px; cursor:pointer; display:none;">Téléporter ici</button>
+        </div>
+    </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script>
+    // ----------- MENU CARTE LEAFLET -----------
+    let leafletMap, cityMarkers = [], selectedMapCityIndex = null;
+
+    // Animation d'ouverture/fermeture du menu
+    function openMapMenu() {
+        const overlay = document.getElementById('mapMenuOverlay');
+        overlay.style.display = 'flex';
+        overlay.style.opacity = 0;
+        overlay.style.transition = 'opacity 0.4s';
+        setTimeout(() => { overlay.style.opacity = 1; }, 10);
+
+        // Initialiser la carte Leaflet si pas déjà fait
+        if (!leafletMap) {
+            leafletMap = L.map('leafletMapContainer', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([stations[0].latitude, stations[0].longitude], 8);
+
+            // Fond de carte
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                minZoom: 5
+            }).addTo(leafletMap);
+
+            // Ajout des marqueurs pour chaque ville
+            cityMarkers = stations.map((st, idx) => {
+                const markerIcon = L.divIcon({
+                    className: '',
+                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                    iconSize: [18,18],
+                    iconAnchor: [9,9]
+                });
+                const marker = L.marker([st.latitude, st.longitude], {icon: markerIcon}).addTo(leafletMap);
+
+                marker.on('click', () => {
+                    selectMapCity(idx);
+                });
+
+                return marker;
+            });
+        } else {
+            // Mettre à jour les couleurs des marqueurs
+            cityMarkers.forEach((marker, idx) => {
+                marker.setIcon(L.divIcon({
+                    className: '',
+                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                    iconSize: [18,18],
+                    iconAnchor: [9,9]
+                }));
+            });
+            leafletMap.setView([stations[currentStationIndex].latitude, stations[currentStationIndex].longitude], leafletMap.getZoom());
+        }
+
+        // Réinitialiser panneau info
+        document.getElementById('cityInfoPanel').style.display = 'none';
+        document.getElementById('teleportBtn').style.display = 'none';
+        selectedMapCityIndex = null;
+    }
+
+    function closeMapMenu() {
+        const overlay = document.getElementById('mapMenuOverlay');
+        overlay.style.opacity = 0;
+        setTimeout(() => { overlay.style.display = 'none'; }, 400);
+    }
+
+    // Sélection d'une ville sur la carte
+    function selectMapCity(idx) {
+        selectedMapCityIndex = idx;
+        const city = stations[idx];
+        document.getElementById('cityName').innerText = city.commune || city.BSS;
+        document.getElementById('cityInfoPanel').style.display = 'block';
+        document.getElementById('teleportBtn').style.display = (idx !== currentStationIndex) ? 'inline-block' : 'none';
+
+        // Afficher un popup au-dessus du marqueur
+        cityMarkers[idx].bindPopup(`<b>${city.commune || city.BSS}</b>`).openPopup();
+    }
+
+    // Téléportation vers la ville sélectionnée
+    async function teleportToSelectedCity() {
+        if (selectedMapCityIndex == null || selectedMapCityIndex === currentStationIndex) return;
+
+        // Réordonner le tableau pour que la ville sélectionnée soit à l'index 0
+        if (selectedMapCityIndex !== 0) {
+            const selectedCity = stations[selectedMapCityIndex];
+            stations.splice(selectedMapCityIndex, 1);
+            stations.unshift(selectedCity);
+            currentStationIndex = 0;
+        } else {
+            currentStationIndex = 0;
+        }
+
+        // Mettre à jour la carte (curseur rouge)
+        cityMarkers.forEach((marker, idx) => {
+            marker.setIcon(L.divIcon({
+                className: '',
+                html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                iconSize: [18,18],
+                iconAnchor: [9,9]
+            }));
+        });
+
+        // Charger la ville dans A-Frame
+        await loadStationDataByBss(stations[0].BSS);
+
+        // Fermer le menu
+        closeMapMenu();
+    }
+
+    // Gestion des boutons menu
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('openMapMenuBtn').onclick = openMapMenu;
+        document.getElementById('closeMapMenuBtn').onclick = closeMapMenu;
+        document.getElementById('teleportBtn').onclick = teleportToSelectedCity;
     });
 </script>
 </body>
