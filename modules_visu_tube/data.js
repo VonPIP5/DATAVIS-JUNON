@@ -172,13 +172,24 @@ export function sortStationsByProximity(stations) {
 }
 
 /**
+ * 
+ * @param {array} vec // Vecteurs de données à normaliser 
+ * @returns {array} // vecteurs normalisés entre 0 et 1
+ */
+function normalizeVectorMinMax(vec) {
+    const min = Math.min(...vec);
+    const max = Math.max(...vec);
+    if (max === min) return vec.map(() => 0); // éviter division par zéro
+    return vec.map(v => (v - min) / (max - min));
+}
+
+/**
  * Crée une matrice de distance entre stations basée sur la similarité de niveau de nappe
  * @param {Array} stations - Liste des stations
  */
 export function createNappeLevelDistanceMatrix(stations) {
     const allDates = getAllDates(stations);
 
-    // Préparation des vecteurs de mesures pour chaque station, alignés sur les dates
     const vectors = stations.map(station => {
         const niveauMap = new Map();
         station.mesuresNappes.forEach(m => {
@@ -187,18 +198,20 @@ export function createNappeLevelDistanceMatrix(stations) {
             }
         });
 
-        const vec = allDates.map(date => niveauMap.has(date) ? niveauMap.get(date) : null);
-        return interpolateMissingValues(vec);
-
+        let vec = allDates.map(date => niveauMap.has(date) ? niveauMap.get(date) : null);
+        vec = interpolateMissingValues(vec);
+        vec = normalizeVectorMinMax(vec);
+        return vec;
     });
 
     const distanceMatrix = vectors.map(v1 =>
         vectors.map(v2 => euclideanDistanceVector(v1, v2))
     );
 
-    console.log("Matrice des distances de niveau de nappe:", distanceMatrix);
+    console.log("Matrice des distances de niveau de nappe normalisée:", distanceMatrix);
     return distanceMatrix;
 }
+
 
 /**
  * Distance euclidienne entre deux vecteurs
