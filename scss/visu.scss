@@ -54,19 +54,19 @@ $primary-color: #3b635c;
     height: 80vh;
     background: white;
     display: none;
-    // grid-template-columns: repeat(2, 1fr);
-    // grid-template-rows: repeat(2, 1fr);
-    // gap: 10px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
     overflow: hidden;
 
     &.active {
-        // display: grid;
-        display: block;
+        display: grid;
+        // display: block;
     }
 
     .multi-line-chart,
-    .normalized-chart,
-    .radial-stacked-chart {
+    .chart-container,
+    .bubble-map-chart {
         @include panel-graph-base;
         width: 100%;
         height: 100%;
@@ -79,14 +79,25 @@ $primary-color: #3b635c;
         grid-row: 1;
     }
 
-    .normalized-chart {
+    .chart-container {
         grid-column: 1;
         grid-row: 2;
     }
 
-    .radial-stacked-chart {
+    .bubble-map-chart {
         grid-column: 2;
         grid-row: 1 / span 2;
+        grid-template-rows: 85% 15%;
+
+        .map-section {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .slider-section {
+            grid-column: 1;
+            grid-row: 2;
+        }
     }
 }
 
@@ -126,8 +137,8 @@ $primary-color: #3b635c;
     @include panel-base;
     bottom: 60px;
     right: 20px;
-    width: 500px;
-    height: 500px;
+    width: 350px;
+    height: 350px;
 }
 
 /**
@@ -173,5 +184,102 @@ $primary-color: #3b635c;
         height: 20px;
         vertical-align: middle;
         margin-right: 6px;
+    }
+}
+
+/** 
+Style pour le graphique bubble map 
+*/
+
+.tooltip,
+#bubbleMapTooltip {
+    position: absolute;
+    display: none;
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid #1976d2;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    color: #222;
+    min-width: 180px;
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+#sliderSection,
+.slider-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    width: 100%;
+
+    button {
+        padding: 5px 10px;
+        cursor: pointer;
+        border: 1px solid #1976d2;
+        border-radius: 4px;
+        background: #f5faff;
+        color: #1976d2;
+        font-weight: bold;
+        font-size: 18px;
+        transition: background 0.2s, color 0.2s;
+
+        &:hover:not(:disabled) {
+            background: #1976d2;
+            color: #fff;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    input[type="range"] {
+        flex: 1;
+        min-width: 200px;
+        max-width: 500px;
+        cursor: pointer;
+        accent-color: #1976d2;
+        height: 4px;
+        margin: 0 10px;
+    }
+
+    span {
+        margin: 0 10px;
+        font-weight: bold;
+        min-width: 100px;
+        text-align: center;
+        font-size: 16px;
+        color: #1976d2;
+    }
+}
+
+.graphique-panel {
+    font-family: Arial, sans-serif;
+    color: #222;
+    font-size: 15px;
+
+    h2,
+    h3,
+    .panel-title,
+    .panel-header {
+        color: #1976d2;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .nodata-msg {
+        color: #d32f2f;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        padding: 10px;
     }
 }

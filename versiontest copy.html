@@ -8,10 +8,67 @@
         body {
             margin: 0;
             overflow: hidden;
+            background: black; /* violet-noir */
+            color: #fff;
         }
         #cursor {
             pointer-events: none;
             user-select: none;
+        }
+        #scatterChartContainer {
+            width: 80vw;
+            height: 80vh;
+            margin: auto;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 0 40px #000;
+            background: #1a1026; /* violet-noir */
+            display: none;
+            align-items: stretch;
+            justify-content: stretch;
+        }
+        #scatterChart {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+            background: #1a1026 !important;
+        }
+        /* Style boutons overlay */
+        #mapMenuOverlay button {
+            background: #2d1846;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        #mapMenuOverlay button:hover {
+            background: #5e35b1;
+        }
+        /* Style popup leaflet */
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: #2d1846 !important;
+            color: #fff !important;
+        }
+        .leaflet-popup-content button {
+            background: #e53935;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            margin-top: 8px;
+            padding: 6px 14px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .leaflet-popup-content button:hover {
+            background: #ff1744;
+        }
+        /* Overlay */
+        #mapMenuOverlay {
+            background: #1a1026 !important;
+        }
+        /* Carte leaflet */
+        #leafletMapContainer {
+            background: #1a1026;
         }
     </style>
 </head>
@@ -45,9 +102,9 @@
         </a-entity>
         
         <!-- Porte arrière -->
-        <a-plane id="backDoor" position="0 2.1 -5.1" rotation="0 0 0" width="2" height="4" color="black" class="interactive"></a-plane>
+        <a-plane id="backDoor" position="0 2.1 -5.1" rotation="0 0 0" width="2" height="4" color="#14532d" class="interactive"></a-plane>
         <!-- Porte avant -->
-        <a-plane id="frontRightDoor" position="0 2.1 5.1" rotation="0 180 0" width="2" height="4" color="black" class="interactive"></a-plane>
+        <a-plane id="frontRightDoor" position="0 2.1 5.1" rotation="0 180 0" width="2" height="4" color="#1976d2" class="interactive"></a-plane>
 
 
         <!-- Plafond -->
@@ -133,15 +190,18 @@
         </a-entity>
         
 
-        <!-- Nappe phreatique -->
-        <a-entity geometry="primitive: cylinder; radius: 2.5; height: 1.5; segmentsRadial: 6"
-            material="color: #1E88E5; emissive: #1E88E5; emissiveIntensity: 0.3"
-            position="0 0.75 0"
+        <!-- Nappe phreatique : OBJ sans aframe-extras -->
+        <a-assets>
+            <a-asset-item id="water-gltf" src="./textures/water_v1.glb"></a-asset-item>
+        </a-assets>
+        <a-gltf-model 
+            src="#water-gltf"
+            position="0 0.01 0"
             rotation="0 30 0"
+            scale="2.199 1.5 2.199"
             shadow="cast:true; receive:true"
-            static-body="shape: cylinder; cylinderRadius: 2.5; cylinderHeight: 1.5">
-        </a-entity>
-
+            static-body>
+        </a-gltf-model>
         <!-- Panneau de graphique -->
         <a-entity id="chartPanel" position="4.45 2.4 -2.6" rotation="0 -60 0" static-body>
             <a-plane id="chartPlane" width="4" height="3" material="shader: flat; color: white; emissive: white; emissiveIntensity: 1">
@@ -154,7 +214,7 @@
                 <a-text id="infoText" value="Chargement..." 
                         width="2.7" align="left" wrap-count="25"
                         position="-1.3 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="./custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
@@ -164,7 +224,7 @@
                 <a-text id="meteoText" value="Chargement meteo..." 
                         width="2.7" align="left" wrap-count="25"
                         position="-1 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="./custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
@@ -174,7 +234,7 @@
                 <a-text id="statsText" value="Chargement stats..." 
                         width="2.7" align="left" wrap-count="30"
                         position="-1 0 0" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="./custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-plane>
         </a-entity>
 
@@ -186,7 +246,7 @@
                 <a-text id="waterLevelText" value="" 
                         width="3" align="center"
                         position="0 -0.1 0.11" color="white"
-                        font="https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Ma%C3%AAl/custom-font-a-Frame/custom-a-frame.fnt"></a-text>
+                        font="./custom-font-a-Frame/custom-a-frame.fnt"></a-text>
             </a-box>
         </a-entity>
 
@@ -214,7 +274,7 @@
 
 <!-- SVG -->
 <svg id="topDownView" width="200" height="200"
-     style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); z-index: 10; opacity: 100%; pointer-events: none;">
+     style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); z-index: 10; opacity: 0%; pointer-events: none;">
     <polygon id="walls" points="40,0 160,0 215,100 160,200 40,200 -15,100"
              fill="none" stroke="black" stroke-width="2" />
              <polygon id="groundDepth" points="157,100 130,150 75,150 45,100 75,47 125,47"
@@ -911,24 +971,33 @@
 </script>
 
     <!-- Bouton menu latéral -->
-    <button id="openMapMenuBtn" style="position:fixed; left:10px; top:50%; transform:translateY(-50%); z-index:10001; background:black; color:white; border:none; border-radius:5px; padding:16px 12px; font-size:1.2em; cursor:pointer;">
-        Carte
+    <button id="openMapMenuBtn" style="position:fixed; left:10px; top:50%; transform:translateY(-50%); z-index:10001; background:white; color:black; border:none; border-radius:5px; padding:8px 6px; font-size:1.5em; cursor:pointer;">
+        🗺️ (k)
     </button>
 
     <!-- Overlay menu latéral (initialement caché) -->
     <div id="mapMenuOverlay" style="position:fixed; left:0; top:0; width:100vw; height:100vh; background:black; z-index:10000; display:none; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;">
         <div id="closeMapMenuBtn" style="position:absolute; top:20px; left:20px; color:white; font-size:2em; cursor:pointer; z-index:10001;">✕</div>
+        <div style="position:absolute; top:20px; right:40px; z-index:10002;">
+            <button id="showScatterBtn" style="padding:8px 18px; font-size:1em; background:#2196f3; color:white; border:none; border-radius:6px; cursor:pointer;">Nuage de points</button>
+            <button id="backToMapBtn" style="padding:8px 18px; font-size:1em; background:#333; color:white; border:none; border-radius:6px; cursor:pointer; display:none;">Retour carte</button>
+        </div>
         <div id="leafletMapContainer" style="width:80vw; height:80vh; margin:auto; border-radius:16px; overflow:hidden; box-shadow:0 0 40px #000;"></div>
-        <div id="cityInfoPanel" style="position:absolute; top:40px; right:40px; background:rgba(0,0,0,0.85); color:white; padding:18px 28px; border-radius:12px; font-size:1.2em; display:none; z-index:10002;">
-            <div id="cityName"></div>
-            <button id="teleportBtn" style="margin-top:12px; padding:8px 18px; font-size:1em; background:#e53935; color:white; border:none; border-radius:6px; cursor:pointer; display:none;">Téléporter ici</button>
+        <div id="scatterChartContainer" style="width:80vw; height:80vh; margin:auto; border-radius:16px; overflow:hidden; box-shadow:0 0 40px #000; background:white; display:none; align-items:center; justify-content:center;">
+            <canvas id="scatterChart"></canvas>
         </div>
     </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <script>
+    // Couleurs pour la map et A-Frame
+    const COLOR_CURRENT = '#ffeb3b'; // jaune pour la ville actuelle
+    const COLOR_NEXT = '#1976d2';    // bleu (A-Frame)
+    const COLOR_PREV = '#14532d';    // vert foncé (A-Frame)
+
     // ----------- MENU CARTE LEAFLET -----------
     let leafletMap, cityMarkers = [], selectedMapCityIndex = null;
 
@@ -940,12 +1009,19 @@
         overlay.style.transition = 'opacity 0.4s';
         setTimeout(() => { overlay.style.opacity = 1; }, 10);
 
+        // Désactiver le pointer lock et afficher le curseur natif
+        const aframeCanvas = document.querySelector('a-scene').canvas;
+        if (aframeCanvas && document.exitPointerLock) {
+            document.exitPointerLock();
+        }
+        document.body.style.cursor = 'auto';
+
         // Initialiser la carte Leaflet si pas déjà fait
         if (!leafletMap) {
             leafletMap = L.map('leafletMapContainer', {
                 zoomControl: true,
                 attributionControl: false
-            }).setView([stations[0].latitude, stations[0].longitude], 8);
+            }).setView([stations[0].latitude, stations[0].longitude], 9);
 
             // Fond de carte
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -954,27 +1030,34 @@
             }).addTo(leafletMap);
 
             // Ajout des marqueurs pour chaque ville
-            cityMarkers = stations.map((st, idx) => {
-                const markerIcon = L.divIcon({
-                    className: '',
-                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
-                    iconSize: [18,18],
-                    iconAnchor: [9,9]
-                });
-                const marker = L.marker([st.latitude, st.longitude], {icon: markerIcon}).addTo(leafletMap);
+            cityMarkers = [];
+            stations.forEach((st, idx) => {
+                // Vérifier que les coordonnées sont valides
+                if (
+                    typeof st.latitude === 'number' && !isNaN(st.latitude) &&
+                    typeof st.longitude === 'number' && !isNaN(st.longitude)
+                ) {
+                    const markerIcon = L.divIcon({
+                        className: '',
+                        html: getMarkerHtml(idx),
+                        iconSize: [18,18],
+                        iconAnchor: [9,9]
+                    });
+                    const marker = L.marker([st.latitude, st.longitude], {icon: markerIcon}).addTo(leafletMap);
 
-                marker.on('click', () => {
-                    selectMapCity(idx);
-                });
+                    marker.on('click', () => {
+                        selectMapCity(idx);
+                    });
 
-                return marker;
+                    cityMarkers.push(marker);
+                }
             });
         } else {
             // Mettre à jour les couleurs des marqueurs
             cityMarkers.forEach((marker, idx) => {
                 marker.setIcon(L.divIcon({
                     className: '',
-                    html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                    html: getMarkerHtml(idx),
                     iconSize: [18,18],
                     iconAnchor: [9,9]
                 }));
@@ -992,18 +1075,35 @@
         const overlay = document.getElementById('mapMenuOverlay');
         overlay.style.opacity = 0;
         setTimeout(() => { overlay.style.display = 'none'; }, 400);
+
+        // Réactiver le pointer lock et masquer le curseur natif
+        const aframeCanvas = document.querySelector('a-scene').canvas;
+        if (aframeCanvas && aframeCanvas.requestPointerLock) {
+            aframeCanvas.requestPointerLock();
+        }
+        document.body.style.cursor = 'none';
     }
 
     // Sélection d'une ville sur la carte
     function selectMapCity(idx) {
         selectedMapCityIndex = idx;
         const city = stations[idx];
-        document.getElementById('cityName').innerText = city.commune || city.BSS;
-        document.getElementById('cityInfoPanel').style.display = 'block';
-        document.getElementById('teleportBtn').style.display = (idx !== currentStationIndex) ? 'inline-block' : 'none';
+        // Afficher un popup au-dessus du marqueur avec bouton téléportation si ce n'est pas la ville courante
+        let popupHtml = `<div style="font-size:1.1em; font-weight:bold;">${city.commune || city.BSS}</div>`;
+        if (idx !== currentStationIndex) {
+            popupHtml += `<br><button id="popupTeleportBtn" style="margin-top:8px; padding:6px 14px; font-size:1em; background:#e53935; color:white; border:none; border-radius:6px; cursor:pointer;">Téléporter ici</button>`;
+        }
+        cityMarkers[idx].bindPopup(popupHtml, { closeButton: true, className: 'custom-popup' }).openPopup();
 
-        // Afficher un popup au-dessus du marqueur
-        cityMarkers[idx].bindPopup(`<b>${city.commune || city.BSS}</b>`).openPopup();
+        // Attacher l'événement au bouton après affichage du popup
+        setTimeout(() => {
+            const btn = document.getElementById('popupTeleportBtn');
+            if (btn) {
+                btn.onclick = async function() {
+                    await teleportToSelectedCity();
+                };
+            }
+        }, 0);
     }
 
     // Téléportation vers la ville sélectionnée
@@ -1020,11 +1120,11 @@
             currentStationIndex = 0;
         }
 
-        // Mettre à jour la carte (curseur rouge)
+        // Mettre à jour la carte (curseur rouge, bleu, vert)
         cityMarkers.forEach((marker, idx) => {
             marker.setIcon(L.divIcon({
                 className: '',
-                html: `<div style="width:18px;height:18px;border-radius:50%;background:${idx===currentStationIndex?'red':'#2196f3'};border:2px solid white;box-shadow:0 0 6px #000"></div>`,
+                html: getMarkerHtml(idx),
                 iconSize: [18,18],
                 iconAnchor: [9,9]
             }));
@@ -1037,12 +1137,37 @@
         closeMapMenu();
     }
 
+    // Fonction utilitaire pour couleur des marqueurs
+    function getMarkerHtml(idx) {
+        // Calculer index précédent et suivant (circular)
+        const prevIdx = (currentStationIndex === 0) ? stations.length - 1 : currentStationIndex - 1;
+        const nextIdx = (currentStationIndex === stations.length - 1) ? 0 : currentStationIndex + 1;
+        let color = '#2196f3'; // défaut
+
+        if (idx === currentStationIndex) color = COLOR_CURRENT;
+        else if (idx === nextIdx) color = COLOR_NEXT;
+        else if (idx === prevIdx) color = COLOR_PREV;
+
+        return `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 6px #000"></div>`;
+    }
+
     // Gestion des boutons menu
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('openMapMenuBtn').onclick = openMapMenu;
         document.getElementById('closeMapMenuBtn').onclick = closeMapMenu;
-        document.getElementById('teleportBtn').onclick = teleportToSelectedCity;
+        document.getElementById('showScatterBtn').onclick = showScatterChart;
+        document.getElementById('backToMapBtn').onclick = hideScatterChart;
     });
+
+    // Ajout : ouverture de la carte avec la touche 'k'
+    document.addEventListener('keydown', function (event) {
+        if (event.key.toLowerCase() === 'k') {
+            openMapMenu();
+        }
+    });
+
+    // Masquer le curseur natif par défaut (sauf quand la carte est ouverte)
+    document.body.style.cursor = 'none';
 </script>
 </body>
 </html>

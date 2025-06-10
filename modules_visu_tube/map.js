@@ -41,7 +41,7 @@ export function getCoordsAndAvg(stations) {
 
 export function generateMap(coords, avgLat, avgLon) {
     const mapPanel = document.getElementById('mapPanel');
-    mapPanel.innerHTML = "<div id='map' style='width: 500px; height: 500px;'></div>";
+    mapPanel.innerHTML = "<div id='map' style='width: 350px; height: 350px;'></div>";
 
     const map = L.map('map').setView([avgLon, avgLat], 9);
 

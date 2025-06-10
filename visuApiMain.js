@@ -8,7 +8,7 @@ import { fetchStationsData, departementStationsInformations, invertDate, getCoor
 import { registerPolygonComponent, highlightSerieByCodeBSS, rotatePolygonToFaceCamera, updatePolygonColors } from './modules_visu_tube/visualisation.js';
 import { generateMap } from './modules_visu_tube/map.js';
 // import { createMultiLineChart, createNormalizedChart } from './modules_visu_tube/graphs.js';
-import { createNormalizedChart } from './modules_visu_tube/graphs.js';
+import { createNormalizedChart, createBubbleMapChart } from './modules_visu_tube/graphs.js';
 
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('search');
@@ -18,9 +18,11 @@ const baseInfosPanel = document.getElementById('baseInfosPanel');
 const overlay = document.getElementById('overlay');
 
 const graphiquePanel = document.getElementById('graphiquePanel');
-const multiLineChartSection = document.getElementById('multiLineChartSection');
+
 const normalizedChartSection = document.getElementById('normalizedChartSection');
-const radialStackedChartSection = document.getElementById('radialStackedChartSection');
+// const chartContainerSection = document.getElementById('chartContainerSection');
+const bubbleMapChartSection = document.querySelector('bubbleMapChartSection');
+const bubleMapSection = document.getElementById('mapSection');
 
 // Initialisation de l'interface
 baseInfosPanel.innerHTML = `
@@ -29,9 +31,9 @@ baseInfosPanel.innerHTML = `
     <button id='visuGraphique' class='visuGraphique'>Visualisation graphique normalisée</button>
     <hr/>
     <p><span class='bold'>Ordre de visualisation 3D</span></p>
-    <select id="ordre" name="ordre" class="select">
-		<option value="distances"> Distances entre stations</option>
-		<option value="mesures"> Mesures des nappes </option>
+    <select id="ordre" name="ordre" class="ordre">
+        <option value="mesures"> Rapprochement des mesures des nappes </option>
+        <option value="distances"> Raprochement par distances entre stations</option>
 	</select>
      <hr/>
      <p><span class='bold'>Couleurs de visualisation</span></p>    
@@ -95,17 +97,22 @@ function searchStation() {
     }
 }
 
-document.getElementById('visuGraphique').addEventListener('click', function () {
+document.getElementById('visuGraphique').addEventListener('click', async function () {
     overlay.classList.toggle('active');
     graphiquePanel.classList.toggle('active');
-
-    // const multiLineChart = createMultiLineChart();
-    // multiLineChartSection.innerHTML = '';
-    // multiLineChartSection.appendChild(multiLineChart);
+    console.log(departementStationsInformations.stations[0].departementCode);
 
     const normalizedChart = createNormalizedChart();
     normalizedChartSection.innerHTML = '';
     normalizedChartSection.appendChild(normalizedChart);
+
+    // const chartContainer = createChart();
+    // chartContainerSection.innerHTML = '';
+    // chartContainerSection.appendChild(chartContainer);
+
+    const bubbleMapChart = await createBubbleMapChart(departementStationsInformations.stations[0].departementCode);
+    bubleMapSection.innerHTML = '';
+    bubleMapSection.appendChild(bubbleMapChart);
 
 });
 
@@ -128,3 +135,8 @@ colorEnd.addEventListener('change', function () {
 
 // Variables globales exportées
 export { infoPanel, graphiquePanel, ordreSelect, colorBegin, colorEnd };
+
+//récupérer la température
+//humidité
+//niveau nappe
+//adapter la couleur au quartille

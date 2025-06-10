@@ -217,7 +217,7 @@ export function registerPolygonComponent() {
                 labelEntity.setAttribute('position', `${labelX} ${labelY} ${labelZ}`);
                 labelEntity.setAttribute('rotation', `-90 ${angleDeg} -90`);
                 labelEntity.setAttribute('text', {
-                    font: "https://raw.githubusercontent.com/VonPIP5/DATAVIS-JUNON/refs/heads/Partie-Maël/custom-font-a-Frame/custom-a-frame.fnt",
+                    font: "./custom-font-a-Frame/custom-a-frame.fnt",
                     value: stationInformations.codeBSS || null,
                     color: '#c6d0d4',
                     align: 'left',
@@ -237,17 +237,18 @@ export function registerPolygonComponent() {
                 for (let j = 0; j < dataCount; j++) {
                     const dataPoint = alignedSerie[j];
 
-                    const height = 0.25;
-                    const width = sideLength;
-                    const depth = 0.01;
-                    const posY = j * height + height / 2;
-
                     // on saute les mesures manquantes, donc espace vide
                     if (!dataPoint || dataPoint.niveauNappe === null || isNaN(dataPoint.niveauNappe)) {
                         continue;
                     }
 
                     const value = dataPoint.niveauNappe;
+
+                    const height = 0.25;
+                    const width = sideLength;
+                    const depth = 0.01;
+                    const posY = j * height + height / 2;
+
                     const [r, g, b] = echelleCouleur(color_begin, color_end, min, max, value);
                     const color = `rgb(${r}, ${g}, ${b})`;
 

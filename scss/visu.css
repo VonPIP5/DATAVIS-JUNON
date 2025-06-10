@@ -1,4 +1,5 @@
 @charset "UTF-8";
+
 /**
  * 3dvisu version SCSS
  */
@@ -19,6 +20,7 @@
   background: rgba(0, 0, 0, 0.6);
   display: none;
 }
+
 .overlay.active {
   display: block;
 }
@@ -38,15 +40,21 @@
   width: 80vw;
   height: 80vh;
   background: white;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 10px;
   display: none;
   overflow: hidden;
 }
+
 .graphique-panel.active {
-  display: block;
+  /* display: block; */
+  display: grid;
 }
-.graphique-panel .multi-line-chart,
+
 .graphique-panel .normalized-chart,
-.graphique-panel .radial-stacked-chart {
+.graphique-panel .chart-container,
+.graphique-panel .bubble-map-chart {
   border: 1px solid #333;
   border-radius: 5px;
   width: 100%;
@@ -54,17 +62,40 @@
   overflow: hidden;
   background: white;
 }
-.graphique-panel .multi-line-chart {
+
+.graphique-panel .normalized-chart {
   grid-column: 1;
   grid-row: 1;
 }
-.graphique-panel .normalized-chart {
+
+.graphique-panel .chart-container {
   grid-column: 1;
   grid-row: 2;
 }
-.graphique-panel .radial-stacked-chart {
+
+.graphique-panel .bubble-map-chart {
   grid-column: 2;
   grid-row: 1/span 2;
+
+  /* display grid pour afficher séparément le bubble map graph et le slider des dates */
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(2, 1fr);
+  grid-row-gap: 10px;
+  grid-template-rows: 85% 15%;
+
+}
+
+.map-section {
+  grid-column: 1;
+  grid-row: 1;
+
+}
+
+.slider-section {
+  grid-column: 1;
+  grid-row: 2;
+
 }
 
 /**
@@ -82,6 +113,12 @@
   max-width: 500px;
 }
 
+.base-infos-panel .ordre {
+  width: 80%;
+  padding: 5px;
+  margin-bottom: 5px;
+}
+
 .search-panel {
   position: fixed;
   padding: 15px;
@@ -93,6 +130,7 @@
   right: 20px;
   max-width: 300px;
 }
+
 .search-panel .searchInput {
   width: 80%;
   padding: 5px;
@@ -121,8 +159,8 @@
   z-index: 500;
   bottom: 60px;
   right: 20px;
-  width: 500px;
-  height: 500px;
+  width: 350px;
+  height: 350px;
 }
 
 /**
@@ -161,9 +199,99 @@
   color: #333;
   max-width: 150px;
 }
+
 .leaflet-control.legend img.imgLegendeMap {
   width: 12px;
   height: 20px;
   vertical-align: middle;
   margin-right: 6px;
-}/*# sourceMappingURL=visu.css.map */
+}
+
+/* Tooltip pour la bubble map */
+.tooltip, #bubbleMapTooltip {
+  position: absolute;
+  display: none;
+  pointer-events: auto;
+  background: rgba(255,255,255,0.97);
+  border: 1px solid #1976d2;
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 9999;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  color: #222;
+  min-width: 180px;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* Style pour le graphique bubble map */
+
+#sliderSection, .slider-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  width: 100%;
+}
+#sliderSection button, .slider-section button {
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  background: #f5faff;
+  color: #1976d2;
+  font-weight: bold;
+  font-size: 18px;
+  transition: background 0.2s, color 0.2s;
+}
+#sliderSection button:hover:not(:disabled), .slider-section button:hover:not(:disabled) {
+  background: #1976d2;
+  color: #fff;
+}
+#sliderSection button:disabled, .slider-section button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#sliderSection input[type="range"], .slider-section input[type="range"] {
+  flex: 1;
+  min-width: 200px;
+  max-width: 500px;
+  cursor: pointer;
+  accent-color: #1976d2;
+  height: 4px;
+  margin: 0 10px;
+}
+#sliderSection span, .slider-section span {
+  margin: 0 10px;
+  font-weight: bold;
+  min-width: 100px;
+  text-align: center;
+  font-size: 16px;
+  color: #1976d2;
+}
+
+.graphique-panel {
+  font-family: Arial, sans-serif;
+  color: #222;
+  font-size: 15px;
+}
+.graphique-panel h2,
+.graphique-panel h3,
+.graphique-panel .panel-title,
+.graphique-panel .panel-header {
+  color: #1976d2;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.graphique-panel .nodata-msg {
+  color: #d32f2f;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px;
+}
+
+/*# sourceMappingURL=visu.css.map */

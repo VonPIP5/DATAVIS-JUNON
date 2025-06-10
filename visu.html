@@ -47,13 +47,16 @@
 
     <section class='parent-panel-info'>
         <div class="graphique-panel" id="graphiquePanel">
-            <!-- <div class="multi-line-chart" id="multiLineChartSection"></div> -->
             <div class="normalized-chart" id="normalizedChartSection"></div>
-            <!-- <div class="radial-stacked-chart" id="radialStackedChartSection"></div> -->
+            <div class="chart-container" id="chartContainerSection"></div>
+            <div class="bubble-map-chart" id="bubbleMapChartSection">
+                <div class="map-section" id="mapSection"></div>
+                <div class="slider-section" id="sliderSection"></div>
+            </div>
         </div>
     </section>
 
-    <script src="visuApiMain.js" type="module"></script>
+    <script src="visuApiMain.js" defer type="module"></script>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

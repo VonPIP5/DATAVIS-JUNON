@@ -4,7 +4,7 @@
  * Récupération, traitement et préparation des données pour la visualisation en 2D sur des graphiques avec D3.js
  */
 
-import { getAllDates, departementStationsInformations } from './data.js';
+import { getAllDates, departementStationsInformations, invertDate } from './data.js';
 
 /**
  * @function createNormalizedChart
@@ -177,6 +177,316 @@ export function createNormalizedChart() {
         update(date);
         event.preventDefault?.();
     });
+
+    return svg.node();
+}
+
+export async function createBubbleMapChart(departementRecherche = null) {
+    const stations = departementStationsInformations.stations;
+
+    // Récupération des conteneurs spécifiques
+    const panel = document.getElementById("bubbleMapChartSection");
+    const mapContainer = document.getElementById("mapSection");
+    const sliderContainer = document.getElementById("sliderSection");
+
+    // Dimensions basées sur le conteneur
+    const width = mapContainer.clientWidth;
+    const height = mapContainer.clientHeight;
+
+    if (!panel || !mapContainer || !sliderContainer) {
+        throw new Error("Conteneurs de la carte à bulles introuvables");
+    }
+
+    // Reset des conteneurs
+    mapContainer.innerHTML = '';
+    sliderContainer.innerHTML = '';
+
+    // --- Tooltip global ---
+    let tooltip = document.getElementById('bubbleMapTooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'bubbleMapTooltip';
+        tooltip.className = 'tooltip';
+        document.body.appendChild(tooltip);
+    }
+    // Les styles sont maintenant dans le CSS/SCSS
+
+    // Charger le GeoJSON
+    let franceGeoJSON;
+    try {
+        franceGeoJSON = await d3.json("modules_visu_tube/data_geoJSON/departements-version-simplifiee.geojson");
+        if (!franceGeoJSON || !franceGeoJSON.features) throw new Error("GeoJSON mal formé ou vide");
+    } catch (e) {
+        mapContainer.innerHTML = `<div style="color:red;">Erreur de chargement du fond de carte : ${e.message}</div>`;
+        return;
+    }
+
+    // Trouver le département à zoomer
+    let departementFeature = null;
+    if (departementRecherche) {
+        departementFeature = franceGeoJSON.features.find(
+            f => f.properties.code === departementRecherche || f.properties.nom === departementRecherche
+        );
+        if (!departementFeature) {
+            mapContainer.innerHTML = `<div style="color:red;">Département "${departementRecherche}" introuvable.</div>`;
+            return;
+        }
+    }
+
+    // Projection dynamique centrée et zoomée sur le département
+    let projection;
+    try {
+        projection = d3.geoConicConformal()
+            .fitSize([width, height], departementFeature || { type: "FeatureCollection", features: franceGeoJSON.features });
+    } catch (e) {
+        mapContainer.innerHTML = `<div style="color:red;">Erreur de projection : ${e.message}</div>`;
+        return;
+    }
+
+    const path = d3.geoPath().projection(projection);
+
+    // Dates disponibles
+    const allDates = Array.from(
+        new Set(stations.flatMap(station => station.mesuresNappes.map(m => m.date)))
+    ).sort((a, b) => {
+        const da = a.split("-").reverse().join("-");
+        const db = b.split("-").reverse().join("-");
+        return new Date(da) - new Date(db);
+    });
+
+    if (!allDates.length) {
+        mapContainer.innerHTML = `<div style="color:red;">Aucune date de mesure trouvée.</div>`;
+        return;
+    }
+
+    let currentDateIndex = 0;
+
+    // Préparer les données par station
+    const stationData = stations.map(station => {
+        const mesures = station.mesuresNappes
+            .slice()
+            .sort((a, b) => {
+                const da = a.date.split("-").reverse().join("-");
+                const db = b.date.split("-").reverse().join("-");
+                return new Date(da) - new Date(db);
+            });
+        if (!mesures.length || !station.latitude || !station.longitude) return null;
+        const values = mesures.map(m => ({
+            date: m.date,
+            niveau: m.niveauNappe
+        }));
+        return {
+            code: station.codeBSS,
+            nom: station.nom || "",
+            commune: station.commune || "",
+            lat: parseFloat(station.latitude),
+            lon: parseFloat(station.longitude),
+            values
+        };
+    }).filter(Boolean);
+
+    if (!stationData.length) {
+        mapContainer.innerHTML = `<div style="color:red;">Aucune station avec coordonnées et mesures exploitables.</div>`;
+        return;
+    }
+
+    // Préparer un mapping date -> [valeurs de niveau de nappe]
+    const niveauxParDate = {};
+    allDates.forEach(date => {
+        niveauxParDate[date] = stationData
+            .map(station => {
+                const mesure = station.values.find(m => m.date === date);
+                return mesure ? mesure.niveau : null;
+            })
+            .filter(v => v !== null && !isNaN(v));
+    });
+
+    // --- SLIDER ---
+    const sliderDiv = d3.select(sliderContainer)
+        .attr("id", "sliderSection") // pour la cohérence
+        .attr("class", "slider-section"); // pour la cohérence
+
+    const prevBtn = sliderDiv.append("button")
+        .text("⏪")
+        .attr("aria-label", "Date précédente")
+        .on("click", () => {
+            if (currentDateIndex > 0) {
+                currentDateIndex--;
+                updateBubbles(currentDateIndex);
+                slider.property("value", currentDateIndex);
+                dateLabel.text(allDates[currentDateIndex]);
+                updateBtnState();
+            }
+        });
+
+    const slider = sliderDiv.append("input")
+        .attr("type", "range")
+        .attr("min", 0)
+        .attr("max", allDates.length - 1)
+        .attr("value", currentDateIndex);
+
+    const dateLabel = sliderDiv.append("span")
+        .text(allDates[currentDateIndex]);
+
+    const nextBtn = sliderDiv.append("button")
+        .text("⏩")
+        .attr("aria-label", "Date suivante")
+        .on("click", () => {
+            if (currentDateIndex < allDates.length - 1) {
+                currentDateIndex++;
+                updateBubbles(currentDateIndex);
+                slider.property("value", currentDateIndex);
+                dateLabel.text(allDates[currentDateIndex]);
+                updateBtnState();
+            }
+        });
+
+    slider.on("input", function () {
+        currentDateIndex = +this.value;
+        updateBubbles(currentDateIndex);
+        dateLabel.text(allDates[currentDateIndex]);
+        updateBtnState();
+    });
+
+    function updateBtnState() {
+        prevBtn.attr("disabled", currentDateIndex === 0 ? true : null);
+        nextBtn.attr("disabled", currentDateIndex === allDates.length - 1 ? true : null);
+    }
+    updateBtnState();
+
+    // Crée un SVG qui prend toute la place de la div, et adapte le viewBox
+    const svg = d3.select(mapContainer).append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", [0, 0, width, height])
+        .attr("preserveAspectRatio", "xMidYMid meet");
+
+    // Dessin du fond de carte
+    svg.append("g")
+        .selectAll("path")
+        .data(franceGeoJSON.features)
+        .join("path")
+        .attr("fill", d => departementFeature && d === departementFeature ? "#ffe082" : "#f0f0f0")
+        .attr("stroke", "#999")
+        .attr("stroke-width", 0.5)
+        .attr("d", path);
+
+    // Groupe pour les cercles
+    const bubblesGroup = svg.append("g");
+
+    // Titre
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", 30)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "16px")
+        .attr("font-weight", "bold")
+        .text("Carte des niveaux de nappe normalisés");
+
+    // Fonction de mise à jour des bulles
+    function updateBubbles(dateIndex) {
+        const date = allDates[dateIndex];
+        const niveaux = niveauxParDate[date];
+        let min = d3.min(niveaux);
+        let max = d3.max(niveaux);
+
+        if (min === max) {
+            min = min - 1;
+            max = max + 1;
+        }
+
+        const bubbles = stationData.map(station => {
+            const mesure = station.values.find(val => val.date === date);
+            if (!mesure) return null;
+            const niveauNormalise = (mesure.niveau - min) / (max - min);
+            return {
+                ...station,
+                niveau: mesure.niveau,
+                normalise: niveauNormalise,
+                date: date
+            };
+        }).filter(Boolean);
+
+        if (!bubbles.length) {
+            d3.select(mapContainer).selectAll(".nodata-msg").data([1])
+                .join("div")
+                .attr("class", "nodata-msg")
+                .text("Aucune donnée pour la date sélectionnée.");
+        } else {
+            d3.select(mapContainer).selectAll(".nodata-msg").remove();
+        }
+
+        // Taille des points (min 5px, max 50px de diamètre)
+        const minDiam = 10, maxDiam = 100;
+        const radiusScale = d3.scaleLinear()
+            .domain([0, 1])
+            .range([minDiam / 2, maxDiam / 2]);
+
+        const circles = bubblesGroup.selectAll("circle")
+            .data(bubbles, d => d.code + '-' + date); // clé unique station+date
+
+        circles.join(
+            enter => enter.append("circle")
+                .attr("cx", d => {
+                    const proj = projection([d.lat, d.lon]);
+                    return proj ? proj[0] : -1000;
+                })
+                .attr("cy", d => {
+                    const proj = projection([d.lat, d.lon]);
+                    return proj ? proj[1] : -1000;
+                })
+                .attr("r", 0)
+                .attr("fill", "#1976d2")
+                .attr("fill-opacity", 0.7)
+                .attr("stroke", "#0d47a1")
+                .attr("stroke-width", 0.7)
+                .style("cursor", "pointer")
+                .on("click", function (event, d) {
+                    tooltip.style.display = 'block';
+                    tooltip.innerHTML = `
+                        <div><b>Date :</b> ${d.date}</div>
+                        <div><b>Commune :</b> ${d.commune}</div>
+                        <div><b>Station :</b> ${d.nom}</div>
+                        <div><b>Code BSS :</b> ${d.code}</div>
+                        <div><b>Niveau nappe :</b> ${d.niveau.toFixed(2)}</div>
+                        `;
+                    tooltip.style.left = (event.clientX + 15) + 'px';
+                    tooltip.style.top = (event.clientY + 15) + 'px';
+                    event.stopPropagation();
+                })
+                .transition()
+                .duration(500)
+                .attr("r", d => radiusScale(d.normalise)),
+            update => update
+                .transition()
+                .duration(500)
+                .attr("cx", d => {
+                    const proj = projection([d.lat, d.lon]);
+                    return proj ? proj[0] : -1000;
+                })
+                .attr("cy", d => {
+                    const proj = projection([d.lat, d.lon]);
+                    return proj ? proj[1] : -1000;
+                })
+                .attr("r", d => radiusScale(d.normalise)),
+            exit => exit
+                .transition()
+                .duration(500)
+                .attr("r", 0)
+                .remove()
+        );
+    }
+
+    // Gestion du clic en dehors des bulles pour masquer le tooltip
+    document.body.addEventListener('click', function () {
+        tooltip.style.display = 'none';
+    });
+    tooltip.addEventListener('click', function (e) {
+        e.stopPropagation();
+    });
+
+    // Initialisation
+    updateBubbles(currentDateIndex);
 
     return svg.node();
 }
